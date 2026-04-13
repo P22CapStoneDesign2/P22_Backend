@@ -5,10 +5,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 
@@ -19,8 +21,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     private final UserAuthService userAuthService;
 
-//    @Value("${app.oauth2.redirect-uri:http://localhost:3000/oauth2/callback}")
-//    private String frontendRedirectUri;
+    @Value("${app.oauth2.redirect-uri:http://localhost:3000/oauth2/callback}")
+    private String frontendRedirectUri;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -36,16 +38,11 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String accessToken = tokens[0];
         String refreshToken = tokens[1];
 
-//        String redirectUrl = UriComponentsBuilder.fromUriString(frontendRedirectUri)
-//                .queryParam("accessToken", accessToken)
-//                .queryParam("refreshToken", refreshToken)
-//                .build()
-//                .toUriString();
-//        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
-
-        response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write(
-                "{\"accessToken\":\"" + accessToken + "\",\"refreshToken\":\"" + refreshToken + "\"}"
-        );
+        String redirectUrl = UriComponentsBuilder.fromUriString(frontendRedirectUri)
+                .queryParam("accessToken", accessToken)
+                .queryParam("refreshToken", refreshToken)
+                .build()
+                .toUriString();
+        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
 }
