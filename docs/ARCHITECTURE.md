@@ -1,15 +1,15 @@
 # ARCHITECTURE — EQZ Backend 패키지 구조
 
-> **패키지 루트**: `com.capstone.eqz_backend`
+> **패키지 루트**: `com.capstone.eqh`
 
 ---
 
 ## 전체 구조
 
 ```
-src/main/java/com/capstone/eqz_backend/
+src/main/java/com/capstone/eqh/
 │
-├── EqzBackendApplication.java
+├── eqhApplication.java
 │
 ├── domain/
 │   ├── user/
@@ -17,65 +17,98 @@ src/main/java/com/capstone/eqz_backend/
 │   │   │   ├── User.java
 │   │   │   └── RefreshToken.java
 │   │   ├── enums/
-│   │   │   ├── Role.java                       # PROF / USER / ADMIN
-│   │   │   └── AuthProvider.java               # LOCAL / KAKAO
+│   │   │   ├── Role.java                              # PROF / USER / ADMIN
+│   │   │   └── AuthProvider.java                      # LOCAL / KAKAO
 │   │   ├── repository/
 │   │   │   ├── UserRepository.java
 │   │   │   └── RefreshTokenRepository.java
 │   │   ├── dto/
 │   │   │   ├── request/
-│   │   │   │   ├── LoginRequest.java
-│   │   │   │   ├── SignupRequest.java
-│   │   │   │   ├── UserUpdateRequest.java
-│   │   │   │   └── PasswordChangeRequest.java
+│   │   │   │   ├── LoginRequestDto.java
+│   │   │   │   ├── SignupRequestDto.java
+│   │   │   │   ├── UserUpdateRequestDto.java
+│   │   │   │   ├── UserDeleteRequestDto.java
+│   │   │   │   ├── ReissueRequestDto.java
+│   │   │   │   └── LogoutRequestDto.java
 │   │   │   └── response/
-│   │   │       ├── AuthResponse.java           # accessToken 포함
-│   │   │       └── UserResponse.java
+│   │   │       ├── AuthResponseDto.java               # accessToken 포함
+│   │   │       └── UserResponseDto.java
 │   │   ├── service/
-│   │   │   ├── UserAuthService.java            # 로그인, 토큰 재발급, 로그아웃
-│   │   │   ├── UserSignupService.java          # 회원가입
-│   │   │   └── UserService.java               # 프로필 조회, 수정, 탈퇴
+│   │   │   ├── UserAuthService.java                   # 로그인, 토큰 재발급, 로그아웃
+│   │   │   ├── UserSignupService.java                 # 회원가입
+│   │   │   └── UserService.java                       # 프로필 조회, 수정, 탈퇴
 │   │   └── controller/
-│   │       ├── AuthController.java            # /api/auth/**
-│   │       └── UserController.java            # /api/users/**
+│   │       ├── AuthController.java                    # /api/auth/**
+│   │       └── UserController.java                    # /api/users/**
 │   │
 │   ├── quiz/
 │   │   ├── entity/
+│   │   │   ├── Quiz.java                              # quiz 테이블 — 퀴즈 세트
+│   │   │   ├── QuizQuestion.java                      # quiz_q 테이블 — 문제 (교안 참조 포함)
+│   │   │   ├── QuizOption.java                        # quiz_opt 테이블 — 객관식 보기
+│   │   │   ├── QuizSubmission.java                    # quiz_sub 테이블 — 학생 제출
+│   │   │   └── QuizSubmissionAnswer.java              # quiz_sub_answer 테이블 — 문제별 답안
+│   │   ├── enums/
+│   │   │   └── QuizType.java                          # MULTIPLE_CHOICE / SHORT_ANSWER
 │   │   ├── repository/
+│   │   │   ├── QuizRepository.java
+│   │   │   ├── QuizQuestionRepository.java
+│   │   │   ├── QuizSubmissionRepository.java
+│   │   │   └── QuizSubmissionAnswerRepository.java    # findWrongAnswersByStudentId 포함
 │   │   ├── dto/
 │   │   │   ├── request/
+│   │   │   │   ├── QuizCreateRequestDto.java
+│   │   │   │   ├── QuizUpdateRequestDto.java
+│   │   │   │   ├── QuizQuestionCreateRequestDto.java  # anchorId, lessonPage, lessonParagraph 포함
+│   │   │   │   ├── QuizQuestionUpdateRequestDto.java
+│   │   │   │   └── QuizSubmitRequestDto.java
 │   │   │   └── response/
+│   │   │       ├── QuizResponseDto.java               # 퀴즈 세트 요약
+│   │   │       ├── QuizDetailResponseDto.java         # 퀴즈 세트 + 문제 목록
+│   │   │       ├── QuizQuestionResponseDto.java       # 문제 + 교안 참조 (anchorId, lessonPage, lessonParagraph)
+│   │   │       ├── QuizSubmissionResponseDto.java     # 제출 결과 + 채점
+│   │   │       └── WrongAnswerResponseDto.java        # 오답 + lessonRef (교안 참조 상세)
 │   │   ├── service/
-│   │   └── controller/                        # /api/quiz/**
+│   │   │   └── QuizService.java
+│   │   └── controller/
+│   │       └── QuizController.java                    # /api/quiz/**
 │   │
 │   └── lesson/
 │       ├── entity/
+│       │   └── Lesson.java                            # lecture_material 테이블
 │       ├── repository/
+│       │   └── LessonRepository.java
 │       ├── dto/
 │       │   ├── request/
+│       │   │   ├── LessonCreateRequestDto.java
+│       │   │   └── LessonUpdateRequestDto.java
 │       │   └── response/
+│       │       └── LessonResponseDto.java
 │       ├── service/
-│       └── controller/                        # /api/lesson/**
+│       │   └── LessonService.java
+│       └── controller/
+│           ├── LessonController.java                  # /api/lessons/**
+│           └── LessonAdminController.java             # /api/admin/lessons/**
 │
 └── global/
     ├── jwt/
-    │   ├── JwtProvider.java                   # 토큰 생성, 검증, 파싱
-    │   └── JwtFilter.java                     # 모든 요청 JWT 검사
+    │   ├── JwtProvider.java                           # 토큰 생성, 검증, 파싱
+    │   └── JwtFilter.java                             # 모든 요청 JWT 검사
     │
     ├── oauth2/
-    │   ├── CustomOidcUser.java                # OidcUser 래퍼 (dbUserId, dbUserRole 포함)
+    │   ├── CustomOidcUser.java                        # OidcUser 래퍼 (dbUserId, dbUserRole 포함)
     │   ├── info/
-    │   │   ├── OAuth2UserInfo.java             # 추상 클래스
-    │   │   └── KakaoOAuth2UserInfo.java        # OIDC claims (sub, nickname) 파싱
+    │   │   ├── OAuth2UserInfo.java                    # 추상 클래스
+    │   │   └── KakaoOAuth2UserInfo.java               # OIDC claims (sub, nickname) 파싱
     │   ├── service/
-    │   │   └── CustomOidcUserService.java      # OIDC 유저 저장/조회 (provider+providerId 기준)
+    │   │   └── CustomOidcUserService.java             # OIDC 유저 저장/조회 (provider+providerId 기준)
     │   └── handler/
-    │       ├── OAuth2SuccessHandler.java       # JWT 발급 및 리다이렉트
-    │       └── OAuth2FailureHandler.java       # 로그인 실패 처리
+    │       ├── OAuth2SuccessHandler.java              # JWT 발급 및 리다이렉트
+    │       └── OAuth2FailureHandler.java              # 로그인 실패 처리
     │
     ├── security/
-    │   ├── SecurityConfig.java                # FilterChain 및 RBAC
-    │   ├── PasswordConfig.java                # PasswordEncoder 빈 (순환 의존성 분리)
+    │   ├── SecurityConfig.java                        # FilterChain 및 RBAC
+    │   ├── PasswordConfig.java                        # PasswordEncoder 빈 (순환 의존성 분리)
     │   ├── CustomUserDetails.java
     │   └── CustomUserDetailsService.java
     │
@@ -85,8 +118,8 @@ src/main/java/com/capstone/eqz_backend/
     │   └── GlobalExceptionHandler.java
     │
     └── common/
-        ├── ApiResponse.java                   # 공통 응답 규격
-        └── BaseTimeEntity.java                # createdAt / updatedAt 자동 관리
+        ├── ApiResponse.java                           # 공통 응답 규격
+        └── BaseTimeEntity.java                        # createdAt / updatedAt 자동 관리
 ```
 
 ---
@@ -96,8 +129,8 @@ src/main/java/com/capstone/eqz_backend/
 | 도메인 | 경로 | 주요 역할 |
 |--------|------|-----------|
 | `user` | `/api/auth/**`, `/api/users/**` | 인증, 회원가입, 프로필 관리 |
-| `quiz` | `/api/quiz/**` | 문제 은행 관리 |
-| `lesson` | `/api/lesson/**` | 교안 뷰어 |
+| `quiz` | `/api/quiz/**` | 퀴즈 세트·문제 관리, 채점, 오답 조회 |
+| `lesson` | `/api/lessons/**` | 교안 뷰어 |
 
 ## global 책임 요약
 
@@ -111,18 +144,58 @@ src/main/java/com/capstone/eqz_backend/
 
 ---
 
+## 퀴즈-교안 연동 설계
+
+### 엔티티 관계
+
+```
+Quiz (1) ──── (N) QuizQuestion
+QuizQuestion (N) ──── (1) Lesson      ← anchor_id FK (lecture_material)
+QuizQuestion (1) ──── (N) QuizOption
+
+QuizSubmission (N) ──── (1) Quiz
+QuizSubmission (N) ──── (1) User (student)
+QuizSubmissionAnswer (N) ──── (1) QuizSubmission
+QuizSubmissionAnswer (N) ──── (1) QuizQuestion
+```
+
+### 교안 참조 필드 (QuizQuestion / quiz_q)
+
+| 필드 | DB 컬럼 | 설명 |
+|------|---------|------|
+| `anchor` | `anchor_id` | 참조 교안 FK → lecture_material (nullable) |
+| `lessonPage` | `lesson_page` | 교수가 지정한 교안 페이지 번호 |
+| `lessonParagraph` | `lesson_paragraph` | 교수가 지정한 교안 문단 번호 |
+
+### 오답 조회 데이터 흐름
+
+```
+GET /api/quiz/wrong-answers
+ → QuizSubmissionAnswerRepository.findWrongAnswersByStudentId()
+ → QuizSubmissionAnswer → QuizQuestion → Lesson (anchor)
+ → WrongAnswerResponseDto { lessonRef { lessonId, lessonTitle, lessonPage, lessonParagraph } }
+```
+
+---
+
 ## 설계 원칙
 
 - **Role 정의** (`enums/Role.java`)는 `domain/user/`에 위치 — 비즈니스 데이터
 - **Role 강제** (`SecurityConfig.java`)는 `global/security/`에 위치 — 횡단 관심사
+- 퀴즈 도메인의 소유자 검증은 컨트롤러 `@PreAuthorize` + `QuizService.isOwner()`로 처리
 - `quiz/`, `lesson/` 도메인은 인증·권한 로직에 의존하지 않음
-- DTO는 `request/` / `response/`로 분리
+- DTO 네이밍: `...RequestDto` / `...ResponseDto`, 구조: `request/` / `response/` 분리
 - Service는 의존성 그래프 기준으로 분리
   - `UserAuthService` — 로그인, 토큰 재발급, 로그아웃
   - `UserSignupService` — 회원가입
   - `UserService` — 프로필 조회, 수정, 탈퇴
+  - `QuizService` — 퀴즈 CRUD, 문제 관리, 채점, 오답 조회
 - Controller는 URL 경로 기준으로 분리
   - `AuthController` — `/api/auth/**`
   - `UserController` — `/api/users/**`
-- **소셜 로그인 유저 식별**: 이메일이 아닌 `provider` + `providerId` (카카오 OIDC `sub` claim) 조합으로 식별
-  - `PasswordEncoder` 빈은 순환 의존성 방지를 위해 `PasswordConfig`에 별도 분리
+  - `QuizController` — `/api/quiz/**`
+  - `LessonController` — `/api/lessons/**`
+- **소셜 로그인 유저 식별**: `provider` + `providerId` (카카오 OIDC `sub` claim) 조합
+- `PasswordEncoder` 빈은 순환 의존성 방지를 위해 `PasswordConfig`에 별도 분리
+- **퀴즈 채점**: `quiz_q.correct_answer`와 `student_answer`를 대소문자 무시 비교
+- **퀴즈 재제출 방지**: `quiz_sub` UNIQUE(quiz_id, student_id) + 서비스 레이어 중복 검사

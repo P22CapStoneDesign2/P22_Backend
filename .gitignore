@@ -3,6 +3,9 @@ HELP.md
 DEVLOG.md
 .cursorrules
 
+### SQL ###
+docs/eqhSQL.sql
+
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
