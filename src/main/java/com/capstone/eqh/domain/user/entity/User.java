@@ -24,6 +24,9 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false, length = 20)
     private String username;
 
+    @Column(nullable = false, unique = true, length = 8)
+    private String nickname;
+
     @Column(nullable = true)
     private String password;
 
@@ -47,9 +50,10 @@ public class User extends BaseTimeEntity {
     private LocalDateTime deletedAt;
 
     @Builder
-    public User(String username, String password, String email,
+    public User(String username, String nickname, String password, String email,
                 AuthProvider provider, String providerId, Role role) {
         this.username = username;
+        this.nickname = nickname;
         this.password = password;
         this.email = email;
         this.provider = provider;
@@ -59,6 +63,10 @@ public class User extends BaseTimeEntity {
 
     public void updateUsername(String username) {
         this.username = username;
+    }
+
+    public void updateNickname(String nickname) {
+        this.nickname = nickname;
     }
 
     public void updatePassword(String encodedPassword) {
