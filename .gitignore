@@ -4,7 +4,7 @@ DEVLOG.md
 .cursorrules
 
 ### SQL ###
-docs/eqhSQL.sql
+docs/eqh_sql.sql
 
 .gradle
 build/
@@ -14,6 +14,7 @@ build/
 
 ### YAML ###
 application.yaml
+application-local.yaml
 
 ### STS ###
 .apt_generated

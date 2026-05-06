@@ -51,17 +51,18 @@
 | Method | URL | 인증 | 권한 | 설명 |
 |--------|-----|------|------|------|
 | `POST` | `/api/lessons` | ✅ | PROF | 교안 생성 |
-| `GET` | `/api/lessons` | ✅ | 모두 | 교안 목록 조회 |
+| `GET` | `/api/lessons` | ✅ | 모두 | 교안 목록 조회 (페이지네이션) |
 | `GET` | `/api/lessons/{id}` | ✅ | 모두 | 교안 단건 조회 |
 | `PUT` | `/api/lessons/{id}` | ✅ | PROF(본인)/ADMIN | 교안 수정 |
 | `DELETE` | `/api/lessons/{id}` | ✅ | PROF(본인)/ADMIN | 교안 삭제 |
+| `GET` | `/api/admin/lessons` | ✅ | ADMIN | 전체 교안 목록 조회 (페이지네이션) |
 
 ### 퀴즈
 
 | Method | URL | 인증 | 권한 | 설명 |
 |--------|-----|------|------|------|
 | `POST` | `/api/quiz` | ✅ | PROF | 퀴즈 세트 생성 |
-| `GET` | `/api/quiz` | ✅ | 모두 | 퀴즈 목록 조회 |
+| `GET` | `/api/quiz` | ✅ | 모두 | 퀴즈 목록 조회 (페이지네이션) |
 | `GET` | `/api/quiz/{quizId}` | ✅ | 모두 | 퀴즈 상세 조회 (문제 포함) |
 | `PUT` | `/api/quiz/{quizId}` | ✅ | PROF(본인)/ADMIN | 퀴즈 수정 |
 | `DELETE` | `/api/quiz/{quizId}` | ✅ | PROF(본인)/ADMIN | 퀴즈 삭제 |
@@ -69,7 +70,7 @@
 | `PUT` | `/api/quiz/{quizId}/questions/{questionId}` | ✅ | PROF(본인)/ADMIN | 문제 수정 |
 | `DELETE` | `/api/quiz/{quizId}/questions/{questionId}` | ✅ | PROF(본인)/ADMIN | 문제 삭제 |
 | `POST` | `/api/quiz/{quizId}/submit` | ✅ | USER | 퀴즈 제출 |
-| `GET` | `/api/quiz/wrong-answers` | ✅ | USER | 오답 목록 조회 |
+| `GET` | `/api/quiz/wrong-answers` | ✅ | USER | 오답 목록 조회 (페이지네이션) |
 
 ---
 
@@ -99,6 +100,13 @@
 ## 2. 일반 로그인
 
 **POST** `/api/auth/login`
+
+### Request Body
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| `email` | String | ✅ | 이메일 |
+| `password` | String | ✅ | 비밀번호 |
 
 ### Response (200)
 
@@ -133,9 +141,288 @@
 
 > Refresh Token Rotation 적용 — 재발급 시 기존 토큰 폐기
 
+### Request Body
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| `refreshToken` | String | ✅ | 기존 Refresh Token |
+
+### Response (200)
+
+```json
+{
+  "status": 200,
+  "message": "토큰 재발급 성공",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
+    "tokenType": "Bearer"
+  }
+}
+```
+
 ---
 
-## 5. 퀴즈 세트 생성
+## 5. 로그아웃
+
+**POST** `/api/auth/logout` | 🔒 인증 필요
+
+### Request Body
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| `refreshToken` | String | ✅ | 폐기할 Refresh Token |
+
+### Response (200)
+
+```json
+{ "status": 200, "message": "로그아웃 성공", "data": null }
+```
+
+---
+
+## 6. 회원 정보 조회
+
+**GET** `/api/users/me` | 🔒 인증 필요
+
+### Response (200)
+
+```json
+{
+  "status": 200,
+  "message": "조회 성공",
+  "data": {
+    "id": 1,
+    "username": "홍길동",
+    "email": "hong@example.com",
+    "provider": "LOCAL",
+    "role": "STUDENT",
+    "createdAt": "2025-01-01T00:00:00"
+  }
+}
+```
+
+| 필드 | 설명 |
+|------|------|
+| `provider` | `LOCAL` / `KAKAO` |
+| `role` | `STUDENT` / `PROFESSOR` / `ADMIN` |
+
+---
+
+## 7. 회원 정보 수정
+
+**PATCH** `/api/users/me` | 🔒 인증 필요
+
+### Request Body
+
+| 파라미터 | 타입 | 필수 | 설명 | 유효성 |
+|----------|------|------|------|--------|
+| `username` | String | ❌ | 새 닉네임 | 2~20자 |
+| `currentPassword` | String | ❌ | 현재 비밀번호 (비밀번호 변경 시 필수) | |
+| `newPassword` | String | ❌ | 새 비밀번호 | 8~20자, 영문+숫자+특수문자 |
+
+### Response (200)
+
+```json
+{
+  "status": 200,
+  "message": "회원 정보 수정 성공",
+  "data": {
+    "id": 1,
+    "username": "새닉네임",
+    "email": "hong@example.com",
+    "provider": "LOCAL",
+    "role": "STUDENT",
+    "createdAt": "2025-01-01T00:00:00"
+  }
+}
+```
+
+---
+
+## 8. 회원 탈퇴
+
+**DELETE** `/api/users/me` | 🔒 인증 필요
+
+### Request Body (optional)
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| `password` | String | ❌ | 현재 비밀번호 (LOCAL 계정만 해당) |
+
+### Response (200)
+
+```json
+{ "status": 200, "message": "회원 탈퇴 성공", "data": null }
+```
+
+---
+
+## 9. 교안 생성
+
+**POST** `/api/lessons` | 🔒 PROF
+
+### Request Body
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| `title` | String | ✅ | 교안 제목 |
+| `description` | String | ❌ | 교안 설명 |
+
+### Response (201)
+
+```json
+{
+  "status": 201,
+  "message": "교안 생성 성공",
+  "data": {
+    "id": 1,
+    "title": "3장. 프로세스와 스레드",
+    "description": "프로세스와 스레드의 개념을 학습합니다.",
+    "createdById": 10,
+    "createdByName": "김교수",
+    "createdAt": "2025-01-01T00:00:00",
+    "updatedAt": "2025-01-01T00:00:00"
+  }
+}
+```
+
+---
+
+## 10. 교안 목록 조회
+
+**GET** `/api/lessons` | 🔒 인증 필요
+
+> 기본값: `size=10`, `sort=createdAt,DESC`
+
+### Query Parameters (Pageable)
+
+| 파라미터 | 타입 | 설명 |
+|----------|------|------|
+| `page` | Integer | 페이지 번호 (0부터, 기본값 0) |
+| `size` | Integer | 페이지 크기 (기본값 10) |
+| `sort` | String | 정렬 기준 (기본값 `createdAt,DESC`) |
+
+### Response (200)
+
+```json
+{
+  "status": 200,
+  "message": "교안 목록 조회 성공",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "title": "3장. 프로세스와 스레드",
+        "description": "프로세스와 스레드의 개념을 학습합니다.",
+        "createdById": 10,
+        "createdByName": "김교수",
+        "createdAt": "2025-01-01T00:00:00",
+        "updatedAt": "2025-01-01T00:00:00"
+      }
+    ],
+    "totalElements": 1,
+    "totalPages": 1,
+    "size": 10,
+    "number": 0
+  }
+}
+```
+
+---
+
+## 11. 교안 단건 조회
+
+**GET** `/api/lessons/{id}` | 🔒 인증 필요
+
+### Response (200)
+
+```json
+{
+  "status": 200,
+  "message": "교안 조회 성공",
+  "data": {
+    "id": 1,
+    "title": "3장. 프로세스와 스레드",
+    "description": "프로세스와 스레드의 개념을 학습합니다.",
+    "createdById": 10,
+    "createdByName": "김교수",
+    "createdAt": "2025-01-01T00:00:00",
+    "updatedAt": "2025-01-01T00:00:00"
+  }
+}
+```
+
+---
+
+## 12. 교안 수정
+
+**PUT** `/api/lessons/{id}` | 🔒 PROF(본인)/ADMIN
+
+### Request Body
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| `title` | String | ✅ | 교안 제목 |
+| `description` | String | ❌ | 교안 설명 |
+
+### Response (200)
+
+```json
+{
+  "status": 200,
+  "message": "교안 수정 성공",
+  "data": { "id": 1, "title": "수정된 제목", "..." : "..." }
+}
+```
+
+---
+
+## 13. 교안 삭제
+
+**DELETE** `/api/lessons/{id}` | 🔒 PROF(본인)/ADMIN
+
+### Response (200)
+
+```json
+{ "status": 200, "message": "교안 삭제 성공", "data": null }
+```
+
+---
+
+## 14. 전체 교안 목록 조회 (관리자)
+
+**GET** `/api/admin/lessons` | 🔒 ADMIN
+
+> 기본값: `size=10`, `sort=createdAt,DESC`
+
+### Query Parameters (Pageable)
+
+| 파라미터 | 타입 | 설명 |
+|----------|------|------|
+| `page` | Integer | 페이지 번호 (0부터, 기본값 0) |
+| `size` | Integer | 페이지 크기 (기본값 10) |
+| `sort` | String | 정렬 기준 (기본값 `createdAt,DESC`) |
+
+### Response (200)
+
+```json
+{
+  "status": 200,
+  "message": "전체 교안 목록 조회 성공",
+  "data": {
+    "content": [ { "id": 1, "title": "...", "..." : "..." } ],
+    "totalElements": 50,
+    "totalPages": 5,
+    "size": 10,
+    "number": 0
+  }
+}
+```
+
+---
+
+## 15. 퀴즈 세트 생성
 
 **POST** `/api/quiz` | 🔒 PROF
 
@@ -169,7 +456,127 @@
 
 ---
 
-## 6. 문제 추가
+## 16. 퀴즈 목록 조회
+
+**GET** `/api/quiz` | 🔒 인증 필요
+
+> 기본값: `size=10`, `sort=createdAt,DESC`
+
+### Query Parameters (Pageable)
+
+| 파라미터 | 타입 | 설명 |
+|----------|------|------|
+| `page` | Integer | 페이지 번호 (0부터, 기본값 0) |
+| `size` | Integer | 페이지 크기 (기본값 10) |
+| `sort` | String | 정렬 기준 (기본값 `createdAt,DESC`) |
+
+### Response (200)
+
+```json
+{
+  "status": 200,
+  "message": "퀴즈 목록 조회 성공",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "title": "3장 운영체제 기초 퀴즈",
+        "description": "3장 내용 복습용 퀴즈입니다.",
+        "professorId": 10,
+        "professorName": "김교수",
+        "questionCount": 5,
+        "createdAt": "2025-01-01T00:00:00",
+        "updatedAt": "2025-01-01T00:00:00"
+      }
+    ],
+    "totalElements": 1,
+    "totalPages": 1,
+    "size": 10,
+    "number": 0
+  }
+}
+```
+
+---
+
+## 17. 퀴즈 상세 조회
+
+**GET** `/api/quiz/{quizId}` | 🔒 인증 필요
+
+### Response (200)
+
+```json
+{
+  "status": 200,
+  "message": "퀴즈 조회 성공",
+  "data": {
+    "id": 1,
+    "title": "3장 운영체제 기초 퀴즈",
+    "description": "3장 내용 복습용 퀴즈입니다.",
+    "professorId": 10,
+    "professorName": "김교수",
+    "questions": [
+      {
+        "id": 5,
+        "questionText": "프로세스와 스레드의 차이점은?",
+        "questionType": "MULTIPLE_CHOICE",
+        "score": 10,
+        "options": [
+          { "id": 1, "optionText": "프로세스는 독립된 메모리 공간을 가진다." },
+          { "id": 2, "optionText": "스레드는 서로 다른 힙을 사용한다." }
+        ],
+        "anchorId": 3,
+        "anchorTitle": "3장. 프로세스와 스레드",
+        "lessonPage": 12,
+        "lessonParagraph": 3
+      }
+    ],
+    "createdAt": "2025-01-01T00:00:00",
+    "updatedAt": "2025-01-01T00:00:00"
+  }
+}
+```
+
+> ⚠️ `correctAnswer`는 학생에게 노출되지 않습니다.
+
+---
+
+## 18. 퀴즈 수정
+
+**PUT** `/api/quiz/{quizId}` | 🔒 PROF(본인)/ADMIN
+
+### Request Body
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| `title` | String | ✅ | 퀴즈 제목 |
+| `description` | String | ❌ | 퀴즈 설명 |
+
+### Response (200)
+
+```json
+{
+  "status": 200,
+  "message": "퀴즈 수정 성공",
+  "data": { "id": 1, "title": "수정된 제목", "..." : "..." }
+}
+```
+
+---
+
+## 19. 퀴즈 삭제
+
+**DELETE** `/api/quiz/{quizId}` | 🔒 PROF(본인)/ADMIN
+
+### Response (200)
+
+```json
+{ "status": 200, "message": "퀴즈 삭제 성공", "data": null }
+```
+
+---
+
+## 20. 문제 추가
 
 **POST** `/api/quiz/{quizId}/questions` | 🔒 PROF(본인)/ADMIN
 
@@ -247,11 +654,52 @@
 }
 ```
 
-> ⚠️ `correctAnswer`는 학생에게 노출되지 않습니다.
+---
+
+## 21. 문제 수정
+
+**PUT** `/api/quiz/{quizId}/questions/{questionId}` | 🔒 PROF(본인)/ADMIN
+
+> `questionType`은 수정 불가합니다.
+
+### Request Body
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| `questionText` | String | ✅ | 문제 내용 |
+| `options` | Array | ❌ | 객관식 보기 목록 |
+| `correctAnswer` | String | ✅ | 정답 텍스트 |
+| `explanation` | String | ❌ | 해설 |
+| `score` | Integer | ✅ | 배점 (0 이상) |
+| `anchorId` | Long | ❌ | 참조 교안 ID |
+| `lessonPage` | Integer | ❌ | 교안 내 페이지 번호 |
+| `lessonParagraph` | Integer | ❌ | 교안 내 문단 번호 |
+
+### Response (200)
+
+```json
+{
+  "status": 200,
+  "message": "문제 수정 성공",
+  "data": { "id": 5, "questionText": "수정된 문제 내용", "..." : "..." }
+}
+```
 
 ---
 
-## 7. 퀴즈 제출
+## 22. 문제 삭제
+
+**DELETE** `/api/quiz/{quizId}/questions/{questionId}` | 🔒 PROF(본인)/ADMIN
+
+### Response (200)
+
+```json
+{ "status": 200, "message": "문제 삭제 성공", "data": null }
+```
+
+---
+
+## 23. 퀴즈 제출
 
 **POST** `/api/quiz/{quizId}/submit` | 🔒 USER
 
@@ -306,12 +754,20 @@
 
 ---
 
-## 8. 오답 목록 조회
+## 24. 오답 목록 조회
 
 **GET** `/api/quiz/wrong-answers` | 🔒 USER
 
 > 학생이 제출한 퀴즈에서 틀린 문제 목록을 조회합니다.
 > 각 오답에 교수가 지정한 **교안 참조 정보(lessonRef)**가 포함됩니다.
+> 기본값: `size=10`, 정렬 기준: 제출 일시 DESC
+
+### Query Parameters (Pageable)
+
+| 파라미터 | 타입 | 설명 |
+|----------|------|------|
+| `page` | Integer | 페이지 번호 (0부터, 기본값 0) |
+| `size` | Integer | 페이지 크기 (기본값 10) |
 
 ### Response (200)
 
@@ -342,13 +798,16 @@
       }
     ],
     "totalElements": 1,
-    "totalPages": 1
+    "totalPages": 1,
+    "size": 10,
+    "number": 0
   }
 }
 ```
 
 | 필드 | 설명 |
 |------|------|
+| `options` | 객관식 보기 텍스트 목록 (`List<String>`), 단답형은 빈 배열 |
 | `lessonRef.lessonId` | 교안 ID |
 | `lessonRef.lessonTitle` | 교안 제목 |
 | `lessonRef.lessonPage` | 교수가 지정한 교안 페이지 번호 |
@@ -378,7 +837,7 @@
 | `id` | BIGINT | PK |
 | `professor_id` | BIGINT | FK → users |
 | `title` | VARCHAR(200) | 교안 제목 |
-| `content` | TEXT | 교안 내용 |
+| `description` | TEXT | 교안 설명 |
 
 ### quiz (퀴즈 세트)
 
@@ -401,8 +860,8 @@
 | `score` | INT | 배점 |
 | `correct_answer` | TEXT | 정답 |
 | `explanation` | TEXT | 해설 |
-| `lesson_page` | INT | 교수가 지정한 교안 페이지 (**신규**) |
-| `lesson_paragraph` | INT | 교수가 지정한 교안 문단 (**신규**) |
+| `lesson_page` | INT | 교수가 지정한 교안 페이지 |
+| `lesson_paragraph` | INT | 교수가 지정한 교안 문단 |
 
 ### quiz_opt (객관식 보기)
 

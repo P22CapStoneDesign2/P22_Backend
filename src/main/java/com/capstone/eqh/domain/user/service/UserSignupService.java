@@ -29,16 +29,18 @@ public class UserSignupService {
             throw new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
+        if (userRepository.existsByNickname(request.nickname())) {
+            throw new CustomException(ErrorCode.NICKNAME_ALREADY_EXISTS);
+        }
+
         User user = User.builder()
                 .username(request.username())
+                .nickname(request.nickname())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
                 .provider(AuthProvider.LOCAL)
                 .role(Role.USER)
                 .build();
-        if (user == null) {
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
-        }
         userRepository.save(user);
     }
 }
