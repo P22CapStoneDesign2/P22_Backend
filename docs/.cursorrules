@@ -1,0 +1,39 @@
+# EQH Backend — Cursor Rules
+
+## 프로젝트 개요
+- 교수(강사)와 학생을 위한 교안 관리 및 퀴즈(문제 은행) 플랫폼
+- 패키지 루트: com.capstone.eqz_backend
+
+## 기술 스택
+- Java 21, Spring Boot 3.x
+- 빌드 도구: Gradle
+- 인증: JWT (Access Token 30분 / Refresh Token 7일) + Kakao OAuth2
+- 응답은 항상 한국어로
+
+## 아키텍처 규칙
+- 레이어: Controller → Service → Repository
+- 패키지 구조: domain/{user,quiz,lesson}/ + global/{jwt,oauth2,security,exception,common}/
+- domain 패키지는 인증·권한 로직(global)에 의존하지 않음
+- DTO는 반드시 request/ / response/ 로 분리
+
+## 코딩 컨벤션
+- 엔티티에는 Lombok 사용 (@Getter, @Builder, @NoArgsConstructor 등)
+- 공통 응답: ApiResponse<T> 래퍼 사용
+- 예외 처리: CustomException + ErrorCode enum + GlobalExceptionHandler
+- 컨트롤러는 URL 경로 기준으로 분리 (AuthController /api/auth/**, UserController /api/users/**)
+- 서비스는 의존성 그래프 기준으로 분리
+- DTO 클래스명/파일명은 반드시 ...RequestDto.java / ...ResponseDto.java 형식으로 통일
+  (예: SignupRequestDto, LoginRequestDto, AuthResponseDto)
+
+## 권한 (RBAC)
+- Role: PROF (강사), USER (학생), ADMIN (관리자)
+- AuthProvider: LOCAL, KAKAO
+
+## 테스트
+- JUnit5 + Mockito
+- 서비스 레이어 단위 테스트 필수
+
+## 참고 문서
+- 서비스 기획: docs/PRD.md
+- API 명세: docs/API.md
+- 패키지 구조: docs/ARCHITECTURE.md
