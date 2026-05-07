@@ -29,10 +29,15 @@ public enum ErrorCode {
 
     // ── 404 Not Found ─────────────────────────────────────────────────
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."),
+    LESSON_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 교안입니다."),
+    QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 퀴즈입니다."),
+    QUIZ_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 문제입니다."),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다."),
 
     // ── 409 Conflict ──────────────────────────────────────────────────
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
+    NICKNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
+    QUIZ_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "이미 제출한 퀴즈입니다."),
     OAUTH2_EMAIL_ALREADY_LOCAL(HttpStatus.CONFLICT, "이미 일반 계정으로 가입된 이메일입니다."),
     SOCIAL_ACCOUNT_CONFLICT(HttpStatus.CONFLICT, "소셜 로그인으로 가입된 계정입니다."),
 

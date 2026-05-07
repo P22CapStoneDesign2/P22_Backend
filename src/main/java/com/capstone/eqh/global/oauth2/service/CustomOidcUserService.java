@@ -73,19 +73,37 @@ public class CustomOidcUserService extends OidcUserService {
         }
 
         String placeholderEmail = provider.name().toLowerCase() + "_" + providerId + "@social.user";
+        String nickname = generateUniqueNickname(providerId);
 
         User newUser = User.builder()
                 .username(name)
+                .nickname(nickname)
                 .email(placeholderEmail)
                 .password(null)
                 .provider(provider)
                 .providerId(providerId)
                 .role(Role.USER)
                 .build();
-        if (newUser == null) {
-            throw toOAuth2Exception(ErrorCode.INTERNAL_SERVER_ERROR);
-        }
         return userRepository.save(newUser);
+    }
+
+    private String generateUniqueNickname(String providerId) {
+        // "k" + providerId 마지막 6자리 → 7자, 영숫자만 사용 (DB CHECK 제약 충족)
+        String suffix = providerId.length() >= 6
+                ? providerId.substring(providerId.length() - 6)
+                : providerId;
+        String candidate = "k" + suffix;
+        if (!userRepository.existsByNickname(candidate)) {
+            return candidate;
+        }
+        // 충돌 시 앞 1자리 추가 확장
+        candidate = "k" + (providerId.length() >= 7
+                ? providerId.substring(providerId.length() - 7)
+                : providerId);
+        if (candidate.length() <= 8 && !userRepository.existsByNickname(candidate)) {
+            return candidate;
+        }
+        throw toOAuth2Exception(ErrorCode.NICKNAME_ALREADY_EXISTS);
     }
 
     private OAuth2AuthenticationException toOAuth2Exception(ErrorCode errorCode) {
