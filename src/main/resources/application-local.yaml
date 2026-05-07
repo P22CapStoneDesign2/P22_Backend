@@ -1,0 +1,59 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  datasource:
+    url: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres?user=postgres.xmvughovslruwerrmvir&password=p22capstonedesign
+    username: postgres.xmvughovslruwerrmvir
+    password: p22capstonedesign
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: a757b9590ce8d1ed31874f6747a52906
+            client-secret: 7iMUrxvjy9Tiafb2x1tFR0vt8THAJOQy
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope:
+              - openid
+              - profile_nickname
+        provider:
+          kakao:
+            issuer-uri: https://kauth.kakao.com
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://openid-api.kakao.com/v1/userinfo
+            user-name-attribute: sub
+
+server:
+  port: 8080
+
+jwt:
+  # Base64 인코딩된 256비트 이상 키 (로컬 개발용 — 실제 배포 시 교체 필수)
+  secret: bG9jYWwtZGV2LXNlY3JldC1rZXktZm9yLWVxaC1iYWNrZW5kLWp3dC1taW5pbXVtLTI1Ni1iaXRz
+
+app:
+  oauth2:
+    redirect-uri: http://localhost:5174/oauth2/callback
+
+logging:
+  level:
+    root: INFO
+    com.capstone.eqh: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
