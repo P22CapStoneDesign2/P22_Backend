@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 public record UserResponseDto(
         Long id,
         String username,
+        String nickname,
         String email,
         String provider,
         String role,
@@ -16,6 +17,7 @@ public record UserResponseDto(
         return new UserResponseDto(
                 user.getId(),
                 user.getUsername(),
+                user.getNickname(),
                 user.getEmail(),
                 user.getProvider().name(),
                 user.getRole().name(),

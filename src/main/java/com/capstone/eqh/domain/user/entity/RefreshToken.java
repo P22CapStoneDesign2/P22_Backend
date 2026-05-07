@@ -25,7 +25,7 @@ public class RefreshToken extends BaseTimeEntity {
     @Column(nullable = false)
     private Long userId;
 
-    @Column(nullable = false)
+    @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiryDate;
 
     @Builder

@@ -36,6 +36,13 @@ public class UserService {
             user.updateUsername(request.username());
         }
 
+        if (request.nickname() != null) {
+            if (userRepository.existsByNickname(request.nickname())) {
+                throw new CustomException(ErrorCode.NICKNAME_ALREADY_EXISTS);
+            }
+            user.updateNickname(request.nickname());
+        }
+
         if (request.newPassword() != null) {
             if (user.getProvider() != AuthProvider.LOCAL) {
                 throw new CustomException(ErrorCode.SOCIAL_CANNOT_CHANGE_PASSWORD);
