@@ -25,7 +25,6 @@ import com.capstone.eqh.domain.user.entity.User;
 import com.capstone.eqh.domain.user.repository.UserRepository;
 import com.capstone.eqh.global.exception.CustomException;
 import com.capstone.eqh.global.exception.ErrorCode;
-import com.capstone.eqh.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -203,9 +202,9 @@ public class QuizService {
                 .map(WrongAnswerResponseDto::from);
     }
 
-    public boolean isOwner(Long quizId, CustomUserDetails principal) {
+    public boolean isOwner(Long quizId, Long userId) {
         return quizRepository.findById(quizId)
-                .map(quiz -> quiz.getProfessor().getId().equals(principal.getUserId()))
+                .map(quiz -> quiz.getProfessor().getId().equals(userId))
                 .orElse(false);
     }
 

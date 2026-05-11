@@ -2,7 +2,7 @@
 
 ## 프로젝트 개요
 교수(강사)와 학생을 위한 교안 관리 및 퀴즈(문제 은행) 플랫폼입니다.
-- **패키지 루트**: `com.capstone.eqz_backend`
+- **패키지 루트**: `com.capstone.eqh`
 - **언어 및 프레임워크**: Java 21, Spring Boot 3.x, Gradle
 
 ## 빌드 및 실행 명령어

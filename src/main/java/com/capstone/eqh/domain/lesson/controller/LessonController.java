@@ -47,7 +47,7 @@ public class LessonController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("(hasRole('PROF') and @lessonService.isOwner(#id, principal)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('PROF') and @lessonService.isOwner(#id, principal.userId)) or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<LessonResponseDto>> update(
             @PathVariable Long id,
             @Valid @RequestBody LessonUpdateRequestDto request) {
@@ -55,7 +55,7 @@ public class LessonController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("(hasRole('PROF') and @lessonService.isOwner(#id, principal)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('PROF') and @lessonService.isOwner(#id, principal.userId)) or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         lessonService.delete(id);
         return ResponseEntity.ok(ApiResponse.success("교안 삭제 성공"));
