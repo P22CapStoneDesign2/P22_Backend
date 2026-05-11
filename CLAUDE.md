@@ -37,6 +37,7 @@
 | `docs/QUALITY.md` | 도메인별 품질 등급 및 개선 우선순위 |
 | `docs/SECURITY.md` | 보안 체크리스트 |
 | `docs/design-docs/index.md` | 설계 결정 목록 (왜 이렇게 만들었는가) |
+| `docs/exec-plans/README.md` | **계획 작성 규칙** (새 작업 전 필독, 테스트 케이스 표 양식 포함) |
 | `docs/exec-plans/tech-debt-tracker.md` | 알려진 기술 부채 목록 |
 | `docs/exec-plans/active/` | 진행 중인 기능 구현 계획 |
 | `docs/exec-plans/completed/` | 완료된 계획 및 의사결정 로그 |
