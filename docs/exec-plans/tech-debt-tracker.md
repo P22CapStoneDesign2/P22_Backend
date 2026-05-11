@@ -7,9 +7,7 @@
 
 ## 🔴 높음 (High)
 
-| ID | 항목 | 위치 | 설명 |
-|----|------|------|------|
-| TD-001 | 서비스 레이어 단위 테스트 부재 | `domain/*/service/` | CLAUDE.md에 필수로 명시되어 있으나 미작성. `UserAuthService`, `QuizService`, `LessonService` 우선 |
+_없음_
 
 ---
 
@@ -35,5 +33,6 @@
 
 | ID | 항목 | 해결일 | PR |
 |----|------|--------|----|
+| TD-001 | 서비스 레이어 단위 테스트 부재 | 2026-05-11 | test/minsik |
 | TD-006 | CLAUDE.md 패키지명 오류 (`eqz_backend`) | 2026-05-11 | refactor/arch_minsik |
 | TD-007 | Service 레이어가 `CustomUserDetails`에 의존 | 2026-05-11 | refactor/arch_minsik |
