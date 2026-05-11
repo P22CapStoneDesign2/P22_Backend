@@ -1,51 +1,51 @@
 # CLAUDE.md — EQH Backend
 
-## 프로젝트 개요
-교수(강사)와 학생을 위한 교안 관리 및 퀴즈(문제 은행) 플랫폼입니다.
+> 이 파일은 목차(map)입니다. 세부 내용은 아래 문서를 참조하세요.
+> 이 파일에 없는 결정·규칙은 존재하지 않는 것으로 간주합니다.
+
+## 프로젝트
+
+교수(강사)와 학생을 위한 교안 관리 및 퀴즈(문제 은행) 플랫폼.
 - **패키지 루트**: `com.capstone.eqh`
-- **언어 및 프레임워크**: Java 21, Spring Boot 3.x, Gradle
+- **언어**: Java 21, Spring Boot 3.x, Gradle
 
-## 빌드 및 실행 명령어
-- **빌드**: `./gradlew build`
-- **애플리케이션 실행**: `./gradlew bootRun`
-- **클린 빌드**: `./gradlew clean build`
+## 빠른 시작
 
-## 테스트 명령어
-- **전체 테스트 실행**: `./gradlew test`
-- **특정 테스트 클래스 실행**: `./gradlew test --tests "패키지명.클래스명"`
-- **테스트 가이드**: JUnit5 및 Mockito를 사용하며, 서비스 레이어 단위 테스트는 필수입니다.
+```bash
+./gradlew build       # 빌드 (ArchUnit 포함)
+./gradlew bootRun     # 실행
+./gradlew test        # 전체 테스트
+```
 
-## 아키텍처 및 패키지 구조
-- **계층 구조**: Controller → Service → Repository
-- **도메인 분리**: `domain/{user,quiz,lesson}/`
-- **공통/전역 설정**: `global/{jwt,oauth2,security,exception,common}/`
-- **규칙**: domain 패키지는 global 패키지의 인증·권한 로직에 의존하지 않아야 합니다.
+## 핵심 불변 규칙
 
-## 코딩 컨벤션
-### 1. DTO (Data Transfer Object)
-- **네이밍**: 반드시 `...RequestDto.java` 또는 `...ResponseDto.java` 형식을 사용합니다. (예: `SignupRequestDto`, `AuthResponseDto`)
-- **구조**: DTO는 반드시 `request/` 또는 `response/` 하위 패키지로 분리합니다.
+1. domain 서비스·리포지터리는 `global.jwt`, `global.oauth2`, `global.security` 의존 금지
+   → 위반 시 `./gradlew test` 빌드 실패 (`ArchitectureTest.java`)
+2. DTO 클래스명: `...RequestDto` / `...ResponseDto` | 위치: `request/` / `response/`
+3. 모든 API 응답은 `ApiResponse<T>` 래퍼 사용
+4. 예외: `CustomException` + `ErrorCode` enum + `GlobalExceptionHandler`
+5. 응답 메시지는 항상 **한국어**
+6. 소유자 검증 서비스 메서드는 `isOwner(Long id, Long userId)` — `CustomUserDetails` 파라미터 금지
 
-### 2. 엔티티 (Entity)
-- **Lombok**: `@Getter`, `@Builder`, `@NoArgsConstructor(access = AccessLevel.PROTECTED)`, `@AllArgsConstructor(access = AccessLevel.PRIVATE)` 사용을 권장합니다.
+## 문서 지도
 
-### 3. 응답 및 예외 처리
-- **공통 응답**: 모든 API 응답은 `ApiResponse<T>` 래퍼 클래스를 사용합니다.
-- **예외 처리**: `CustomException`, `ErrorCode` enum, `GlobalExceptionHandler`를 통해 처리합니다.
-- **언어**: 사용자 응답 메시지는 항상 **한국어**를 사용합니다.
+| 문서 | 내용 |
+|------|------|
+| `docs/ARCHITECTURE.md` | 패키지 구조, 레이어 의존 규칙, ArchUnit 규칙 표 |
+| `docs/API.md` | 전체 API 명세 |
+| `docs/PRD.md` | 서비스 기획, 권한 정의, 시나리오 |
+| `docs/QUALITY.md` | 도메인별 품질 등급 및 개선 우선순위 |
+| `docs/SECURITY.md` | 보안 체크리스트 |
+| `docs/design-docs/index.md` | 설계 결정 목록 (왜 이렇게 만들었는가) |
+| `docs/exec-plans/tech-debt-tracker.md` | 알려진 기술 부채 목록 |
+| `docs/exec-plans/active/` | 진행 중인 기능 구현 계획 |
+| `docs/exec-plans/completed/` | 완료된 계획 및 의사결정 로그 |
+| `docs/generated/db-schema.md` | 엔티티 기반 DB 스키마 |
+| `docs/product-specs/index.md` | 제품 스펙 목록 |
 
-### 4. 컨트롤러 및 서비스
-- **컨트롤러**: URL 경로 기준으로 분리합니다.
-    - `/api/auth/**` -> `AuthController`
-    - `/api/users/**` -> `UserController`
-- **서비스**: 의존성 그래프를 기준으로 명확히 분리합니다.
+## 권한 및 인증
 
-## 권한 및 인증 (RBAC)
-- **역할(Role)**: `PROF` (강사), `USER` (학생), `ADMIN` (관리자)
-- **인증 방식**: JWT (Access 30분 / Refresh 7일) 및 Kakao OAuth2
-- **제공자(AuthProvider)**: `LOCAL`, `KAKAO`
-
-## 참고 문서
-- **기획**: `docs/PRD.md`
-- **API 명세**: `docs/API.md`
-- **상세 구조**: `docs/ARCHITECTURE.md`
+- **Role**: `PROF`(강사) · `USER`(학생) · `ADMIN`(관리자)
+- **인증**: JWT — Access 30분 / Refresh 7일 (Rotation 적용)
+- **소셜**: Kakao OAuth2 (OIDC)
+- **Provider**: `LOCAL` · `KAKAO`
