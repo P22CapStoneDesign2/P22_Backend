@@ -101,7 +101,7 @@ src/main/java/com/capstone/eqh/
     │   │   ├── OAuth2UserInfo.java                    # 추상 클래스
     │   │   └── KakaoOAuth2UserInfo.java               # OIDC claims (sub, nickname) 파싱
     │   ├── service/
-    │   │   └── CustomOidcUserService.java             # OIDC 유저 저장/조회 (provider+providerId 기준)
+    │   │   └── CustomOidcUserService.java             # OIDC OAuth2 어댑터 — 유저 저장/조회는 UserSignupService에 위임
     │   └── handler/
     │       ├── OAuth2SuccessHandler.java              # JWT 발급 및 리다이렉트
     │       └── OAuth2FailureHandler.java              # 로그인 실패 처리
@@ -137,7 +137,7 @@ src/main/java/com/capstone/eqh/
 | 패키지 | 주요 역할 |
 |--------|-----------|
 | `jwt` | 토큰 생성·검증·파싱, 요청 필터링 |
-| `oauth2` | 카카오 OIDC 로그인 처리 (provider+providerId 기반 유저 식별) |
+| `oauth2` | 카카오 OIDC OAuth2 어댑터 — 유저 생성 비즈니스 로직은 `UserSignupService`에 위임 |
 | `security` | FilterChain 구성, RBAC 적용, PasswordEncoder 빈 |
 | `exception` | 공통 예외 처리 |
 | `common` | 공통 응답 규격, JPA Auditing 기반 시간 필드 |
@@ -190,7 +190,7 @@ GET /api/quiz/wrong-answers
 - DTO 네이밍: `...RequestDto` / `...ResponseDto`, 구조: `request/` / `response/` 분리
 - Service는 의존성 그래프 기준으로 분리
   - `UserAuthService` — 로그인, 토큰 재발급, 로그아웃
-  - `UserSignupService` — 회원가입
+  - `UserSignupService` — 회원가입 (LOCAL), 소셜 유저 조회/생성 (`findOrCreateSocialUser`)
   - `UserService` — 프로필 조회, 수정, 탈퇴
   - `QuizService` — 퀴즈 CRUD, 문제 관리, 채점, 오답 조회
 - Controller는 URL 경로 기준으로 분리
