@@ -43,4 +43,43 @@ public class UserSignupService {
                 .build();
         userRepository.save(user);
     }
+
+    @Transactional
+    public User findOrCreateSocialUser(String providerId, String name, AuthProvider provider) {
+        return userRepository.findByProviderAndProviderId(provider, providerId)
+                .orElseGet(() -> createSocialUser(providerId, name, provider));
+    }
+
+    private User createSocialUser(String providerId, String name, AuthProvider provider) {
+        String resolvedName = (name == null || name.length() > 20) ? "카카오유저" : name;
+        String placeholderEmail = provider.name().toLowerCase() + "_" + providerId + "@social.user";
+        String nickname = generateUniqueNickname(providerId);
+
+        return userRepository.save(User.builder()
+                .username(resolvedName)
+                .nickname(nickname)
+                .email(placeholderEmail)
+                .password(null)
+                .provider(provider)
+                .providerId(providerId)
+                .role(Role.USER)
+                .build());
+    }
+
+    private String generateUniqueNickname(String providerId) {
+        String suffix = providerId.length() >= 6
+                ? providerId.substring(providerId.length() - 6)
+                : providerId;
+        String candidate = "k" + suffix;
+        if (!userRepository.existsByNickname(candidate)) {
+            return candidate;
+        }
+        candidate = "k" + (providerId.length() >= 7
+                ? providerId.substring(providerId.length() - 7)
+                : providerId);
+        if (candidate.length() <= 8 && !userRepository.existsByNickname(candidate)) {
+            return candidate;
+        }
+        throw new CustomException(ErrorCode.NICKNAME_ALREADY_EXISTS);
+    }
 }

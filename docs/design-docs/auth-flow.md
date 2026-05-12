@@ -75,3 +75,21 @@ public boolean isOwner(Long lessonId, Long userId) { ... }
 **이유**: 동일 이메일로 LOCAL 계정이 존재해도 KAKAO 계정은 별도 처리 가능.
 
 **구현**: `CustomOidcUserService` — OIDC `sub` claim을 `providerId`로 저장.
+
+---
+
+## 결정 7 — CustomOidcUserService 책임 분리
+
+**결정**: 소셜 유저 조회/생성 비즈니스 로직을 `CustomOidcUserService`에서 `UserSignupService`로 이전.
+
+**이유**: `CustomOidcUserService`는 Spring Security `OidcUserService`를 상속하는 프레임워크 어댑터다. 유저 생성 로직이 함께 있으면 `global/oauth2`가 도메인 비즈니스 규칙(닉네임 생성 정책 등)을 직접 보유하게 되어 관심사가 혼재된다.
+
+**구현**:
+```
+CustomOidcUserService.loadUser()
+  → userSignupService.findOrCreateSocialUser(providerId, name, provider)
+      → UserRepository.findByProviderAndProviderId()  // 기존 유저 조회
+      → createSocialUser() + generateUniqueNickname() // 신규 유저 생성
+```
+
+**경계**: `CustomOidcUserService`는 OAuth2 프로토콜 처리 + `UserSignupService` 위임만 담당. 닉네임 생성 정책은 `UserSignupService` 내부.
