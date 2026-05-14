@@ -7,3 +7,4 @@
 |------|------|------------|------|
 | [auth-flow.md](auth-flow.md) | ✅ 확정 | user, global | JWT + Kakao OAuth2 인증 흐름, Refresh Token Rotation |
 | [rbac-model.md](rbac-model.md) | ✅ 확정 | 전체 | PROF/USER/ADMIN 권한 체계, @PreAuthorize 패턴 |
+| [signup-role-separation.md](signup-role-separation.md) | 🔧 설계 중 | user, global.oauth2, global.jwt | PROF 로컬 가입 / USER 카카오 가입 분리, pending 토큰 흐름 |

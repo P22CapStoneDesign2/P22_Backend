@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -35,11 +36,22 @@ public class CustomOidcUserService extends OidcUserService {
         OAuth2UserInfo userInfo = extractUserInfo(registrationId, oidcUser.getAttributes());
         AuthProvider provider = resolveProvider(registrationId);
 
-        User user = userSignupService.findOrCreateSocialUser(userInfo.getId(), userInfo.getName(), provider);
+        Optional<User> existing = userSignupService.findSocialUser(userInfo.getId(), provider);
+
+        if (existing.isPresent()) {
+            User user = existing.get();
+            return new CustomOidcUser(oidcUser, Map.of(
+                    "isNewUser",   false,
+                    "dbUserId",    user.getId(),
+                    "dbUserRole",  user.getRole().name()
+            ));
+        }
 
         return new CustomOidcUser(oidcUser, Map.of(
-                "dbUserId", user.getId(),
-                "dbUserRole", user.getRole().name()
+                "isNewUser",    true,
+                "providerId",   userInfo.getId(),
+                "providerName", provider.name(),
+                "kakaoName",    userInfo.getName() != null ? userInfo.getName() : ""
         ));
     }
 
