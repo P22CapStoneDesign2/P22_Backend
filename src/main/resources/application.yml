@@ -1,0 +1,57 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: capstone-backend
+
+  datasource:
+    url: jdbc:h2:mem:capstone;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+  h2:
+    console:
+      enabled: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2s
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:your-email@gmail.com}
+    password: ${MAIL_PASSWORD:your-app-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+app:
+  email-verification:
+    code-ttl-seconds: 300
+    resend-cooldown-seconds: 60
+    max-sends-per-hour: 5
+    send-window-seconds: 3600
+    max-verify-attempts: 5
+    lock-duration-seconds: 300
+    verified-ttl-seconds: 1800
+    hmac-secret: ${EMAIL_VERIFY_HMAC_SECRET:dev-hmac-secret-change-me}
+
+logging:
+  level:
+    org.hibernate.SQL: warn
