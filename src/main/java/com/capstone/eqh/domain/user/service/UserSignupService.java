@@ -20,9 +20,12 @@ public class UserSignupService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationService emailVerificationService;
 
     @Transactional
     public void profSignup(ProfSignupRequestDto request) {
+        emailVerificationService.requireEmailVerifiedForSignup(request.email());
+
         if (!request.password().equals(request.passwordConfirm())) {
             throw new CustomException(ErrorCode.PASSWORD_CONFIRM_MISMATCH);
         }
@@ -41,6 +44,8 @@ public class UserSignupService {
                 .provider(AuthProvider.LOCAL)
                 .role(Role.PROF)
                 .build());
+
+        emailVerificationService.consumeEmailVerification(request.email());
     }
 
     @Transactional(readOnly = true)

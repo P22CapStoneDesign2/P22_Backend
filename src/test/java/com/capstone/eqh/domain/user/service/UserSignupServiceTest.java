@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,6 +29,7 @@ class UserSignupServiceTest {
 
     @Mock UserRepository userRepository;
     @Mock PasswordEncoder passwordEncoder;
+    @Mock EmailVerificationService emailVerificationService;
     @InjectMocks UserSignupService userSignupService;
 
     private ProfSignupRequestDto profRequest(String password, String passwordConfirm) {
@@ -58,6 +60,22 @@ class UserSignupServiceTest {
         assertThat(saved.getEmail()).isEqualTo("hong@university.ac.kr");
         assertThat(saved.getNickname()).isEqualTo("gildong");
         assertThat(saved.getUsername()).isEqualTo("홍길동");
+        verify(emailVerificationService).requireEmailVerifiedForSignup(request.email());
+        verify(emailVerificationService).consumeEmailVerification(request.email());
+    }
+
+    @Test
+    @DisplayName("profSignup 실패: 이메일 미인증이면 EMAIL_NOT_VERIFIED")
+    void profSignup_emailNotVerified() {
+        ProfSignupRequestDto request = profRequest("Password1!", "Password1!");
+        doThrow(new CustomException(ErrorCode.EMAIL_NOT_VERIFIED))
+                .when(emailVerificationService).requireEmailVerifiedForSignup(request.email());
+
+        assertThatThrownBy(() -> userSignupService.profSignup(request))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.EMAIL_NOT_VERIFIED);
+        verify(userRepository, never()).save(any());
     }
 
     @Test
