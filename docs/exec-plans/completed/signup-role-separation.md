@@ -1,6 +1,7 @@
-# [진행 중] PROF / USER 회원가입 분리
+# [완료] PROF / USER 회원가입 분리
 
 - **시작일**: 2026-05-14
+- **완료일**: 2026-05-14
 - **브랜치**: feature/signup-role-separation
 
 ## 목표
@@ -13,16 +14,16 @@
 
 ## 수용 기준
 
-- [ ] `POST /api/auth/profsignup` 호출 시 Role.PROF로 유저가 저장된다
-- [ ] `POST /api/auth/signup` 엔드포인트는 삭제된다
-- [ ] 기존 카카오 유저(DB에 존재)는 로그인 시 기존과 동일하게 JWT가 발급된다
-- [ ] 카카오 신규 유저는 로그인 시 DB에 저장되지 않고 pending 토큰과 함께 프론트 가입 페이지로 리다이렉트된다
-- [ ] `POST /api/auth/usersignup` 호출 시 pending 토큰 검증 후 Role.USER로 유저가 저장되고 JWT가 발급된다
-- [ ] pending 토큰이 만료(10분)되었거나 위·변조된 경우 적절한 에러를 반환한다
-- [ ] 이메일·닉네임 중복 시 기존 에러코드(`EMAIL_ALREADY_EXISTS`, `NICKNAME_ALREADY_EXISTS`)를 그대로 반환한다
-- [ ] 닉네임 유효성: 영문·숫자·한글, 2~20자 (PROF·USER 공통)
-- [ ] `GET /api/auth/check-nickname?nickname=xxx` 호출 시 DB에서 중복 여부를 반환한다
-- [ ] `./gradlew test` 통과 (ArchUnit 포함)
+- [x] `POST /api/auth/profsignup` 호출 시 Role.PROF로 유저가 저장된다
+- [x] `POST /api/auth/signup` 엔드포인트는 삭제된다
+- [x] 기존 카카오 유저(DB에 존재)는 로그인 시 기존과 동일하게 JWT가 발급된다
+- [x] 카카오 신규 유저는 로그인 시 DB에 저장되지 않고 pending 토큰과 함께 프론트 가입 페이지로 리다이렉트된다
+- [x] `POST /api/auth/usersignup` 호출 시 pending 토큰 검증 후 Role.USER로 유저가 저장되고 JWT가 발급된다
+- [x] pending 토큰이 만료(10분)되었거나 위·변조된 경우 적절한 에러를 반환한다
+- [x] 이메일·닉네임 중복 시 기존 에러코드(`EMAIL_ALREADY_EXISTS`, `NICKNAME_ALREADY_EXISTS`)를 그대로 반환한다
+- [x] 닉네임 유효성: 영문·숫자·한글, 2~20자 (PROF·USER 공통)
+- [x] `GET /api/auth/check-nickname?nickname=xxx` 호출 시 DB에서 중복 여부를 반환한다
+- [x] `./gradlew test` 통과 (ArchUnit 포함)
 
 ## 변경 대상 파일
 
@@ -100,3 +101,5 @@
   - 이유: 단위 테스트에서 발견. `parseClaims()`는 jjwt 예외를 직접 던지므로 `CustomException`을 잡던 기존 코드는 만료/위변조 시 raw JJWT 예외가 그대로 빠져나가 `INVALID_PENDING_TOKEN`으로 변환되지 않았음
 - **2026-05-14** — `application-local.yaml`의 JWT secret을 32바이트 키로 교체
   - 이유: 기존 키가 31바이트(248비트)라 jjwt 0.12.x의 HMAC-SHA 최소 요구치(256비트)에 미달하여 `WeakKeyException`으로 Spring Context 로딩 실패. 회원가입 분리 작업과 직접 관련은 없으나 테스트 통과 블로커였음
+- **2026-05-14** — `User.nickname` 컬럼 `length = 8` → `length = 20`
+  - 이유: DTO 유효성을 2~20자로 변경했으나 엔티티 컬럼 길이가 8자로 남아 있으면 9자 이상 닉네임이 DTO 검증을 통과하고도 DB INSERT 단계에서 실패함. 4단계 db-schema 검토 중 발견하여 정정

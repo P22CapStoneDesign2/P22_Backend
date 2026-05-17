@@ -2,7 +2,7 @@
 
 > 이 파일은 엔티티 클래스 기반으로 유지됩니다.
 > 엔티티 변경 시 이 파일도 함께 업데이트해야 합니다.
-> 마지막 갱신: 2026-05-11
+> 마지막 갱신: 2026-05-14
 
 ---
 
@@ -14,7 +14,7 @@
 |------|------|------|------|
 | `id` | BIGINT | PK, AUTO_INCREMENT | |
 | `username` | VARCHAR(20) | NOT NULL | 이름 |
-| `nickname` | VARCHAR(8) | NOT NULL, UNIQUE | 닉네임 |
+| `nickname` | VARCHAR(20) | NOT NULL, UNIQUE | 닉네임 (영문·숫자·한글, 2~20자) |
 | `password` | VARCHAR | NULL | LOCAL 계정만 사용, 소셜 로그인은 NULL |
 | `email` | VARCHAR | NOT NULL, UNIQUE | |
 | `provider` | VARCHAR(10) | NOT NULL | `LOCAL` \| `KAKAO` |

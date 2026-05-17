@@ -37,11 +37,13 @@
 
 | Method | URL | 인증 | 설명 |
 |--------|-----|------|------|
-| `POST` | `/api/auth/signup` | ❌ | 회원가입 |
-| `POST` | `/api/auth/login` | ❌ | 일반 로그인 |
-| `GET` | `/oauth2/authorization/kakao` | ❌ | Kakao 소셜 로그인 |
+| `POST` | `/api/auth/profsignup` | ❌ | 교수(PROF) 로컬 회원가입 |
+| `POST` | `/api/auth/usersignup` | ❌ | 학생(USER) 카카오 소셜 가입 완료 |
+| `GET` | `/api/auth/check-nickname` | ❌ | 닉네임 중복 확인 |
+| `POST` | `/api/auth/login` | ❌ | 일반 로그인 (PROF) |
+| `GET` | `/oauth2/authorization/kakao` | ❌ | Kakao 소셜 로그인 (USER) |
 | `POST` | `/api/auth/reissue` | ❌ | Access Token 재발급 |
-| `POST` | `/api/auth/logout` | ✅ | 로그아웃 |
+| `POST` | `/api/auth/logout` | ❌ | 로그아웃 (request body의 refreshToken만 사용) |
 | `GET` | `/api/users/me` | ✅ | 회원 정보 조회 |
 | `PATCH` | `/api/users/me` | ✅ | 회원 정보 수정 |
 | `DELETE` | `/api/users/me` | ✅ | 회원 탈퇴 |
@@ -74,16 +76,19 @@
 
 ---
 
-## 1. 회원가입
+## 1. 교수(PROF) 회원가입
 
-**POST** `/api/auth/signup`
+**POST** `/api/auth/profsignup`
+
+> 성공 시 `Role.PROF` + `AuthProvider.LOCAL`로 저장됩니다.
 
 ### Request Body
 
 | 파라미터 | 타입 | 필수 | 설명 | 유효성 |
 |----------|------|------|------|--------|
-| `username` | String | ✅ | 닉네임 | 2~20자 |
+| `username` | String | ✅ | 이름 | 2~20자 |
 | `email` | String | ✅ | 이메일 | 이메일 형식, 중복 불가 |
+| `nickname` | String | ✅ | 닉네임 | 영문·숫자·한글, 2~20자, 중복 불가 |
 | `password` | String | ✅ | 비밀번호 | 8~20자, 영문+숫자+특수문자 |
 | `passwordConfirm` | String | ✅ | 비밀번호 확인 | password와 일치 |
 
@@ -92,8 +97,74 @@
 | 상황 | Status | 메시지 |
 |------|--------|--------|
 | 성공 | `201` | 회원가입 성공 |
+| 비밀번호 확인 불일치 | `400` | 비밀번호 확인이 일치하지 않습니다. |
 | 이메일 중복 | `409` | 이미 사용 중인 이메일입니다. |
-| 유효성 실패 | `400` | 비밀번호 형식이 올바르지 않습니다. |
+| 닉네임 중복 | `409` | 이미 사용 중인 닉네임입니다. |
+| 유효성 실패 | `400` | (필드별 메시지) |
+
+---
+
+## 1-1. 학생(USER) 소셜 가입 완료
+
+**POST** `/api/auth/usersignup`
+
+> 카카오 동의 화면을 통과한 신규 유저가 이름·이메일·닉네임을 입력하고 호출하는 엔드포인트입니다.
+> 성공 시 `Role.USER` + `AuthProvider.KAKAO`로 저장되고 즉시 JWT가 발급됩니다.
+> 흐름은 §3 소셜 로그인을 참조하세요.
+
+### Request Body
+
+| 파라미터 | 타입 | 필수 | 설명 | 유효성 |
+|----------|------|------|------|--------|
+| `pendingToken` | String | ✅ | 백엔드가 발급한 10분짜리 임시 토큰 (`?pendingToken=...`로 전달받음) | |
+| `username` | String | ✅ | 이름 (카카오 `profile_nickname`이 기본값, 수정 가능) | 2~20자 |
+| `email` | String | ✅ | 이메일 | 이메일 형식, 중복 불가 |
+| `nickname` | String | ✅ | 닉네임 | 영문·숫자·한글, 2~20자, 중복 불가 |
+
+### Response (201)
+
+```json
+{
+  "status": 201,
+  "message": "회원가입 성공",
+  "data": {
+    "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+    "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
+    "tokenType": "Bearer"
+  }
+}
+```
+
+| 상황 | Status | 메시지 |
+|------|--------|--------|
+| pending 토큰 만료·위변조 | `401` | 소셜 가입 정보가 만료되었거나 유효하지 않습니다. 카카오 로그인을 다시 시도해 주세요. |
+| 이메일 중복 | `409` | 이미 사용 중인 이메일입니다. |
+| 닉네임 중복 | `409` | 이미 사용 중인 닉네임입니다. |
+
+---
+
+## 1-2. 닉네임 중복 확인
+
+**GET** `/api/auth/check-nickname?nickname={nickname}`
+
+> 회원가입 폼에서 입력 중 실시간 호출되는 엔드포인트입니다.
+> 중복 여부를 에러가 아닌 `200 + available` 필드로 반환합니다.
+
+### Query Parameter
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| `nickname` | String | ✅ | 확인할 닉네임 |
+
+### Response (200)
+
+```json
+// 사용 가능
+{ "status": 200, "message": "사용 가능한 닉네임입니다.", "data": { "available": true } }
+
+// 중복
+{ "status": 200, "message": "이미 사용 중인 닉네임입니다.", "data": { "available": false } }
+```
 
 ---
 
@@ -131,7 +202,31 @@
 
 **GET** `/oauth2/authorization/kakao` → Kakao OIDC 인증 페이지로 리다이렉트
 
-최종 콜백: `https://프론트엔드주소/oauth2/callback?accessToken=...&refreshToken=...`
+카카오 인증 완료 후 백엔드(`OAuth2SuccessHandler`)는 **DB에 해당 카카오 계정이 존재하는지**에 따라 두 가지 경로로 분기합니다.
+
+### 기존 유저 (DB에 존재)
+바로 JWT 발급.
+
+```
+{redirect-uri}?accessToken=eyJ...&refreshToken=eyJ...
+# 예: http://localhost:5174/oauth2/callback?accessToken=...&refreshToken=...
+```
+
+### 신규 유저 (DB에 없음)
+DB 저장은 하지 않고, **10분짜리 pending 토큰**과 함께 정보 입력 페이지로 리다이렉트. 프론트는 이름 필드를 `kakaoName`으로 pre-fill하고 사용자가 이메일·닉네임을 입력한 뒤 `POST /api/auth/usersignup` 호출(§1-1).
+
+```
+{register-uri}?pendingToken=eyJ...&kakaoName=홍길동
+# 예: http://localhost:5174/oauth2/register?pendingToken=...&kakaoName=...
+```
+
+| pending 토큰 클레임 | 값 |
+|--------------------|----|
+| `sub` | providerId (카카오 OIDC `sub`) |
+| `type` | `PENDING_SOCIAL` |
+| `provider` | `KAKAO` |
+| `name` | 카카오 `profile_nickname` (pre-fill용) |
+| 유효기간 | 10분 |
 
 ---
 
@@ -165,7 +260,9 @@
 
 ## 5. 로그아웃
 
-**POST** `/api/auth/logout` | 🔒 인증 필요
+**POST** `/api/auth/logout`
+
+> request body의 `refreshToken`만으로 동작합니다. Authorization 헤더(access token)는 검증·요구되지 않습니다 — access token이 만료된 상태에서도 로그아웃 가능.
 
 ### Request Body
 
@@ -196,7 +293,7 @@
     "username": "홍길동",
     "email": "hong@example.com",
     "provider": "LOCAL",
-    "role": "STUDENT",
+    "role": "USER",
     "createdAt": "2025-01-01T00:00:00"
   }
 }
@@ -205,7 +302,7 @@
 | 필드 | 설명 |
 |------|------|
 | `provider` | `LOCAL` / `KAKAO` |
-| `role` | `STUDENT` / `PROFESSOR` / `ADMIN` |
+| `role` | `USER` / `PROF` / `ADMIN` |
 
 ---
 
@@ -232,7 +329,7 @@
     "username": "새닉네임",
     "email": "hong@example.com",
     "provider": "LOCAL",
-    "role": "STUDENT",
+    "role": "USER",
     "createdAt": "2025-01-01T00:00:00"
   }
 }
@@ -824,11 +921,15 @@
 | 컬럼명 | 타입 | 설명 |
 |--------|------|------|
 | `id` | BIGINT | PK |
-| `username` | VARCHAR(50) | 닉네임 |
-| `email` | VARCHAR(100) | 이메일 (소셜 유저는 플레이스홀더) |
-| `password` | VARCHAR(255) | NULL (소셜 로그인) |
-| `role` | user_role | `STUDENT` / `PROFESSOR` / `ADMIN` |
+| `username` | VARCHAR(20) | 이름 |
+| `nickname` | VARCHAR(20) | 닉네임 (UNIQUE) |
+| `email` | VARCHAR | 이메일 (UNIQUE) |
+| `password` | VARCHAR | NULL (소셜 로그인) |
+| `role` | VARCHAR(10) | `USER` / `PROF` / `ADMIN` |
 | `provider` | VARCHAR(10) | `LOCAL` / `KAKAO` |
+| `provider_id` | VARCHAR | 소셜 로그인 시 OIDC `sub`, LOCAL은 NULL |
+
+> 자세한 스키마는 [docs/generated/db-schema.md](generated/db-schema.md) 참조.
 
 ### lecture_material (교안)
 

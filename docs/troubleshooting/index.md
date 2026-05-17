@@ -42,3 +42,4 @@
 |------|------|--------|
 | [jwt-pending-token-catch-clause.md](jwt-pending-token-catch-clause.md) | `JwtProvider.getPendingTokenClaims()`의 catch가 잘못된 예외 타입을 잡아 만료·위변조 시 `INVALID_PENDING_TOKEN`으로 변환되지 않던 문제 | 2026-05-14 |
 | [jwt-secret-key-length.md](jwt-secret-key-length.md) | `application-local.yaml`의 JWT secret이 248비트라 jjwt 0.12.x의 HMAC-SHA 최소 요구(256비트)에 미달해 Spring Context 로딩 실패 | 2026-05-14 |
+| [jwt-filter-public-401.md](jwt-filter-public-401.md) | `JwtFilter`가 `permitAll` 엔드포인트에서도 토큰 검증을 시도해, 헤더의 stale 토큰 때문에 회원가입·재발급이 401로 차단되던 문제 | 2026-05-14 |

@@ -7,8 +7,11 @@
 ## 인증·인가
 
 - [x] JWT Secret Key는 환경변수(`jwt.secret`)로 관리, 코드·Git에 노출 금지
+- [x] JWT Secret Key는 디코드된 바이트 길이 ≥ 32 (HS256 최소 요구 256비트) — 참고: [troubleshooting/jwt-secret-key-length.md](troubleshooting/jwt-secret-key-length.md)
 - [x] Access Token 유효기간 30분
 - [x] Refresh Token Rotation 적용 (재발급 시 기존 토큰 폐기)
+- [x] 카카오 신규 유저 가입 임시 토큰(`PENDING_SOCIAL`)은 10분 유효, DB 저장 없이 JWT 클레임만으로 상태 유지 — 만료·위변조 시 `INVALID_PENDING_TOKEN`(401) 반환
+- [x] `JwtFilter`는 `/api/auth/**`, `/oauth2/**`, `/login/oauth2/**` 경로에서 `shouldNotFilter()`로 토큰 검증을 skip — 회원가입·로그인·재발급이 헤더의 stale 토큰에 의해 차단되는 것을 방지 — 참고: [troubleshooting/jwt-filter-public-401.md](troubleshooting/jwt-filter-public-401.md)
 - [x] 탈퇴(soft-delete) 유저는 `CustomUserDetails.isEnabled()` → `false`로 인증 거부
 - [x] `@PreAuthorize`로 메서드 레벨 권한 검증
 - [ ] Refresh Token 탈취 감지 (동일 토큰 재사용 감지) 미구현

@@ -1,6 +1,6 @@
 # 설계: PROF / USER 회원가입 분리
 
-- **상태**: 설계 중
+- **상태**: ✅ 확정 (2026-05-14 구현 완료)
 - **관련 exec-plan**: `exec-plans/active/signup-role-separation.md`
 - **대상 도메인**: user, global.oauth2, global.jwt
 

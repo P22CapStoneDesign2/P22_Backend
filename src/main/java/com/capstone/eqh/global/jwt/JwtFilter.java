@@ -30,9 +30,26 @@ public class JwtFilter extends OncePerRequestFilter {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
+    private static final String[] PUBLIC_PATH_PREFIXES = {
+            "/api/auth/",
+            "/oauth2/",
+            "/login/oauth2/"
+    };
+
     private final JwtProvider jwtProvider;
     private final CustomUserDetailsService userDetailsService;
     private final ObjectMapper objectMapper;
+
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String path = request.getServletPath();
+        for (String prefix : PUBLIC_PATH_PREFIXES) {
+            if (path.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
