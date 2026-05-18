@@ -2,7 +2,7 @@
 
 ## 프로젝트 개요
 - 교수(강사)와 학생을 위한 교안 관리 및 퀴즈(문제 은행) 플랫폼
-- 패키지 루트: com.capstone.eqz_backend
+- 패키지 루트: com.capstone.eqh
 
 ## 기술 스택
 - Java 21, Spring Boot 3.x
@@ -13,8 +13,12 @@
 ## 아키텍처 규칙
 - 레이어: Controller → Service → Repository
 - 패키지 구조: domain/{user,quiz,lesson}/ + global/{jwt,oauth2,security,exception,common}/
-- domain 패키지는 인증·권한 로직(global)에 의존하지 않음
+- domain 서비스·리포지터리는 global 인증·권한 로직에 의존하지 않음 (ArchUnit으로 강제)
+  - 예외: domain.user.service (UserAuthService는 JwtProvider 직접 사용)
+  - 예외: domain.*.controller (@AuthenticationPrincipal 패턴 허용)
+- 소유자 검증 메서드는 `isOwner(Long id, Long userId)` 형태 — CustomUserDetails를 받지 않음
 - DTO는 반드시 request/ / response/ 로 분리
+- 아키텍처 규칙은 `ArchitectureTest.java`로 CI에서 자동 검증됨
 
 ## 코딩 컨벤션
 - 엔티티에는 Lombok 사용 (@Getter, @Builder, @NoArgsConstructor 등)

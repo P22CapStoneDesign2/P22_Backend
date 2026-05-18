@@ -2,8 +2,7 @@ package com.capstone.eqh.global.oauth2.service;
 
 import com.capstone.eqh.domain.user.entity.User;
 import com.capstone.eqh.domain.user.enums.AuthProvider;
-import com.capstone.eqh.domain.user.enums.Role;
-import com.capstone.eqh.domain.user.repository.UserRepository;
+import com.capstone.eqh.domain.user.service.UserSignupService;
 import com.capstone.eqh.global.exception.ErrorCode;
 import com.capstone.eqh.global.oauth2.CustomOidcUser;
 import com.capstone.eqh.global.oauth2.info.KakaoOAuth2UserInfo;
@@ -26,7 +25,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CustomOidcUserService extends OidcUserService {
 
-    private final UserRepository userRepository;
+    private final UserSignupService userSignupService;
 
     @Override
     @Transactional
@@ -37,11 +36,22 @@ public class CustomOidcUserService extends OidcUserService {
         OAuth2UserInfo userInfo = extractUserInfo(registrationId, oidcUser.getAttributes());
         AuthProvider provider = resolveProvider(registrationId);
 
-        User user = findOrCreateUser(userInfo, provider);
+        Optional<User> existing = userSignupService.findSocialUser(userInfo.getId(), provider);
+
+        if (existing.isPresent()) {
+            User user = existing.get();
+            return new CustomOidcUser(oidcUser, Map.of(
+                    "isNewUser",   false,
+                    "dbUserId",    user.getId(),
+                    "dbUserRole",  user.getRole().name()
+            ));
+        }
 
         return new CustomOidcUser(oidcUser, Map.of(
-                "dbUserId", user.getId(),
-                "dbUserRole", user.getRole().name()
+                "isNewUser",    true,
+                "providerId",   userInfo.getId(),
+                "providerName", provider.name(),
+                "kakaoName",    userInfo.getName() != null ? userInfo.getName() : ""
         ));
     }
 
@@ -57,53 +67,6 @@ public class CustomOidcUserService extends OidcUserService {
             return AuthProvider.KAKAO;
         }
         throw toOAuth2Exception(ErrorCode.OAUTH2_UNSUPPORTED_PROVIDER);
-    }
-
-    private User findOrCreateUser(OAuth2UserInfo userInfo, AuthProvider provider) {
-        String providerId = userInfo.getId();
-
-        Optional<User> existing = userRepository.findByProviderAndProviderId(provider, providerId);
-        if (existing.isPresent()) {
-            return existing.get();
-        }
-
-        String name = userInfo.getName();
-        if (name == null || name.length() > 20) {
-            name = "카카오유저";
-        }
-
-        String placeholderEmail = provider.name().toLowerCase() + "_" + providerId + "@social.user";
-        String nickname = generateUniqueNickname(providerId);
-
-        User newUser = User.builder()
-                .username(name)
-                .nickname(nickname)
-                .email(placeholderEmail)
-                .password(null)
-                .provider(provider)
-                .providerId(providerId)
-                .role(Role.USER)
-                .build();
-        return userRepository.save(newUser);
-    }
-
-    private String generateUniqueNickname(String providerId) {
-        // "k" + providerId 마지막 6자리 → 7자, 영숫자만 사용 (DB CHECK 제약 충족)
-        String suffix = providerId.length() >= 6
-                ? providerId.substring(providerId.length() - 6)
-                : providerId;
-        String candidate = "k" + suffix;
-        if (!userRepository.existsByNickname(candidate)) {
-            return candidate;
-        }
-        // 충돌 시 앞 1자리 추가 확장
-        candidate = "k" + (providerId.length() >= 7
-                ? providerId.substring(providerId.length() - 7)
-                : providerId);
-        if (candidate.length() <= 8 && !userRepository.existsByNickname(candidate)) {
-            return candidate;
-        }
-        throw toOAuth2Exception(ErrorCode.NICKNAME_ALREADY_EXISTS);
     }
 
     private OAuth2AuthenticationException toOAuth2Exception(ErrorCode errorCode) {

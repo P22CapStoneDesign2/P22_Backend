@@ -9,7 +9,6 @@ import com.capstone.eqh.domain.user.entity.User;
 import com.capstone.eqh.domain.user.repository.UserRepository;
 import com.capstone.eqh.global.exception.CustomException;
 import com.capstone.eqh.global.exception.ErrorCode;
-import com.capstone.eqh.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -57,10 +56,10 @@ public class LessonService {
         lessonRepository.delete(lesson);
     }
 
-    public boolean isOwner(Long lessonId, CustomUserDetails principal) {
+    public boolean isOwner(Long lessonId, Long userId) {
         return lessonRepository.findById(lessonId)
                 .map(lesson -> lesson.getCreatedBy() != null &&
-                        lesson.getCreatedBy().getId().equals(principal.getUserId()))
+                        lesson.getCreatedBy().getId().equals(userId))
                 .orElse(false);
     }
 

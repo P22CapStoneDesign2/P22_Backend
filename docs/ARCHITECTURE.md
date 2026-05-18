@@ -1,4 +1,4 @@
-# ARCHITECTURE — EQZ Backend 패키지 구조
+# ARCHITECTURE — EQH Backend 패키지 구조
 
 > **패키지 루트**: `com.capstone.eqh`
 
@@ -101,7 +101,7 @@ src/main/java/com/capstone/eqh/
     │   │   ├── OAuth2UserInfo.java                    # 추상 클래스
     │   │   └── KakaoOAuth2UserInfo.java               # OIDC claims (sub, nickname) 파싱
     │   ├── service/
-    │   │   └── CustomOidcUserService.java             # OIDC 유저 저장/조회 (provider+providerId 기준)
+    │   │   └── CustomOidcUserService.java             # OIDC OAuth2 어댑터 — 유저 저장/조회는 UserSignupService에 위임
     │   └── handler/
     │       ├── OAuth2SuccessHandler.java              # JWT 발급 및 리다이렉트
     │       └── OAuth2FailureHandler.java              # 로그인 실패 처리
@@ -137,7 +137,7 @@ src/main/java/com/capstone/eqh/
 | 패키지 | 주요 역할 |
 |--------|-----------|
 | `jwt` | 토큰 생성·검증·파싱, 요청 필터링 |
-| `oauth2` | 카카오 OIDC 로그인 처리 (provider+providerId 기반 유저 식별) |
+| `oauth2` | 카카오 OIDC OAuth2 어댑터 — 유저 생성 비즈니스 로직은 `UserSignupService`에 위임 |
 | `security` | FilterChain 구성, RBAC 적용, PasswordEncoder 빈 |
 | `exception` | 공통 예외 처리 |
 | `common` | 공통 응답 규격, JPA Auditing 기반 시간 필드 |
@@ -182,12 +182,15 @@ GET /api/quiz/wrong-answers
 
 - **Role 정의** (`enums/Role.java`)는 `domain/user/`에 위치 — 비즈니스 데이터
 - **Role 강제** (`SecurityConfig.java`)는 `global/security/`에 위치 — 횡단 관심사
-- 퀴즈 도메인의 소유자 검증은 컨트롤러 `@PreAuthorize` + `QuizService.isOwner()`로 처리
-- `quiz/`, `lesson/` 도메인은 인증·권한 로직에 의존하지 않음
+- 퀴즈·교안 도메인의 소유자 검증은 컨트롤러 `@PreAuthorize` + `isOwner(Long id, Long userId)`로 처리
+  - 서비스의 `isOwner`는 `Long userId`만 받음 — `CustomUserDetails` 등 보안 객체를 받지 않음
+  - 컨트롤러에서 `principal.userId`를 꺼내 서비스에 전달 (`@PreAuthorize("... isOwner(#id, principal.userId)")`)
+- `domain.*.service`, `domain.*.repository`는 `global.jwt`, `global.oauth2`, `global.security`에 의존하지 않음
+  - 예외: `domain.user.service` — `UserAuthService`가 `JwtProvider`를 직접 사용하는 인증 서비스
 - DTO 네이밍: `...RequestDto` / `...ResponseDto`, 구조: `request/` / `response/` 분리
 - Service는 의존성 그래프 기준으로 분리
   - `UserAuthService` — 로그인, 토큰 재발급, 로그아웃
-  - `UserSignupService` — 회원가입
+  - `UserSignupService` — 회원가입 (LOCAL), 소셜 유저 조회/생성 (`findOrCreateSocialUser`)
   - `UserService` — 프로필 조회, 수정, 탈퇴
   - `QuizService` — 퀴즈 CRUD, 문제 관리, 채점, 오답 조회
 - Controller는 URL 경로 기준으로 분리
@@ -199,3 +202,18 @@ GET /api/quiz/wrong-answers
 - `PasswordEncoder` 빈은 순환 의존성 방지를 위해 `PasswordConfig`에 별도 분리
 - **퀴즈 채점**: `quiz_q.correct_answer`와 `student_answer`를 대소문자 무시 비교
 - **퀴즈 재제출 방지**: `quiz_sub` UNIQUE(quiz_id, student_id) + 서비스 레이어 중복 검사
+
+---
+
+## 아키텍처 강제 적용 (ArchUnit)
+
+`src/test/java/com/capstone/eqh/ArchitectureTest.java`에서 빌드 시 자동으로 검증하는 규칙:
+
+| 규칙 | 내용 |
+|------|------|
+| `domainServiceDoesNotDependOnGlobalAuth` | domain 서비스·리포지터리는 `global.jwt`, `global.oauth2`, `global.security` 의존 불가 |
+| `domainLayeringRule` | domain 내부 Controller → Service → Repository 단방향 의존성 강제 |
+| `requestDtoNamingRule` | `dto.request` 패키지의 최상위 클래스는 `RequestDto`로 끝나야 함 |
+| `responseDtoNamingRule` | `dto.response` 패키지의 최상위 클래스는 `ResponseDto`로 끝나야 함 |
+
+규칙 위반 시 `./gradlew test` 빌드가 실패하므로, 잘못된 의존성이 코드베이스에 병합되지 않습니다.
