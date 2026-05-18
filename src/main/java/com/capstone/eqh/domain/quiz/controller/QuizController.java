@@ -6,6 +6,7 @@ import com.capstone.eqh.domain.quiz.dto.request.QuizQuestionUpdateRequestDto;
 import com.capstone.eqh.domain.quiz.dto.request.QuizSubmitRequestDto;
 import com.capstone.eqh.domain.quiz.dto.request.QuizUpdateRequestDto;
 import com.capstone.eqh.domain.quiz.dto.response.QuizDetailResponseDto;
+import com.capstone.eqh.domain.quiz.dto.response.QuizEditResponseDto;
 import com.capstone.eqh.domain.quiz.dto.response.QuizQuestionResponseDto;
 import com.capstone.eqh.domain.quiz.dto.response.QuizResponseDto;
 import com.capstone.eqh.domain.quiz.dto.response.QuizSubmissionResponseDto;
@@ -53,6 +54,13 @@ public class QuizController {
     @GetMapping("/{quizId}")
     public ResponseEntity<ApiResponse<QuizDetailResponseDto>> getOne(@PathVariable Long quizId) {
         return ResponseEntity.ok(ApiResponse.success(200, "퀴즈 조회 성공", quizService.getOne(quizId)));
+    }
+
+    @GetMapping("/{quizId}/edit")
+    @PreAuthorize("(hasRole('PROF') and @quizService.isOwner(#quizId, principal)) or hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<QuizEditResponseDto>> getForEdit(@PathVariable Long quizId) {
+        return ResponseEntity.ok(ApiResponse.success(200, "퀴즈 수정용 조회 성공",
+                quizService.getForEdit(quizId)));
     }
 
     @PutMapping("/{quizId}")

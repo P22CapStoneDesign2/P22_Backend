@@ -63,7 +63,8 @@
 |--------|-----|------|------|------|
 | `POST` | `/api/quiz` | ✅ | PROF | 퀴즈 세트 생성 |
 | `GET` | `/api/quiz` | ✅ | 모두 | 퀴즈 목록 조회 (페이지네이션) |
-| `GET` | `/api/quiz/{quizId}` | ✅ | 모두 | 퀴즈 상세 조회 (문제 포함) |
+| `GET` | `/api/quiz/{quizId}` | ✅ | 모두 | 퀴즈 상세 조회 (문제 포함, 정답 미노출) |
+| `GET` | `/api/quiz/{quizId}/edit` | ✅ | PROF(본인)/ADMIN | 퀴즈 수정용 조회 (정답·해설 포함, preload) |
 | `PUT` | `/api/quiz/{quizId}` | ✅ | PROF(본인)/ADMIN | 퀴즈 수정 |
 | `DELETE` | `/api/quiz/{quizId}` | ✅ | PROF(본인)/ADMIN | 퀴즈 삭제 |
 | `POST` | `/api/quiz/{quizId}/questions` | ✅ | PROF(본인)/ADMIN | 문제 추가 |
@@ -541,7 +542,53 @@
 
 ---
 
-## 18. 퀴즈 수정
+## 18. 퀴즈 수정용 조회
+
+**GET** `/api/quiz/{quizId}/edit` | 🔒 PROF(본인)/ADMIN
+
+수정 화면에서 사용하는 preload 전용 엔드포인트. 17번(상세 조회)과 달리 각 문제의 `correctAnswer`, `explanation`, 각 옵션의 `correct` 플래그를 포함한다.
+
+### Response (200)
+
+```json
+{
+  "status": 200,
+  "message": "퀴즈 수정용 조회 성공",
+  "data": {
+    "id": 1,
+    "title": "3장 운영체제 기초 퀴즈",
+    "description": "3장 내용 복습용 퀴즈입니다.",
+    "professorId": 10,
+    "professorName": "김교수",
+    "questions": [
+      {
+        "id": 5,
+        "questionText": "프로세스와 스레드의 차이점은?",
+        "questionType": "MULTIPLE_CHOICE",
+        "score": 10,
+        "correctAnswer": "1",
+        "explanation": "프로세스는 독립된 메모리 공간을 가진다.",
+        "options": [
+          { "id": 1, "optionText": "프로세스는 독립된 메모리 공간을 가진다.", "correct": true },
+          { "id": 2, "optionText": "스레드는 서로 다른 힙을 사용한다.", "correct": false }
+        ],
+        "anchorId": 3,
+        "anchorTitle": "3장. 프로세스와 스레드",
+        "lessonPage": 12,
+        "lessonParagraph": 3
+      }
+    ],
+    "createdAt": "2025-01-01T00:00:00",
+    "updatedAt": "2025-01-01T00:00:00"
+  }
+}
+```
+
+> 🔒 소유자(PROF) 또는 ADMIN만 호출 가능. 학생용 17번 엔드포인트와 응답 형태는 다르므로 프론트에서 수정 화면 진입 시에는 반드시 이 엔드포인트를 사용한다.
+
+---
+
+## 19. 퀴즈 수정
 
 **PUT** `/api/quiz/{quizId}` | 🔒 PROF(본인)/ADMIN
 
@@ -564,7 +611,7 @@
 
 ---
 
-## 19. 퀴즈 삭제
+## 20. 퀴즈 삭제
 
 **DELETE** `/api/quiz/{quizId}` | 🔒 PROF(본인)/ADMIN
 
@@ -576,7 +623,7 @@
 
 ---
 
-## 20. 문제 추가
+## 21. 문제 추가
 
 **POST** `/api/quiz/{quizId}/questions` | 🔒 PROF(본인)/ADMIN
 
@@ -656,7 +703,7 @@
 
 ---
 
-## 21. 문제 수정
+## 22. 문제 수정
 
 **PUT** `/api/quiz/{quizId}/questions/{questionId}` | 🔒 PROF(본인)/ADMIN
 
@@ -687,7 +734,7 @@
 
 ---
 
-## 22. 문제 삭제
+## 23. 문제 삭제
 
 **DELETE** `/api/quiz/{quizId}/questions/{questionId}` | 🔒 PROF(본인)/ADMIN
 
@@ -699,7 +746,7 @@
 
 ---
 
-## 23. 퀴즈 제출
+## 24. 퀴즈 제출
 
 **POST** `/api/quiz/{quizId}/submit` | 🔒 USER
 
@@ -754,7 +801,7 @@
 
 ---
 
-## 24. 오답 목록 조회
+## 25. 오답 목록 조회
 
 **GET** `/api/quiz/wrong-answers` | 🔒 USER
 

@@ -8,6 +8,7 @@ import com.capstone.eqh.domain.quiz.dto.request.QuizQuestionUpdateRequestDto;
 import com.capstone.eqh.domain.quiz.dto.request.QuizSubmitRequestDto;
 import com.capstone.eqh.domain.quiz.dto.request.QuizUpdateRequestDto;
 import com.capstone.eqh.domain.quiz.dto.response.QuizDetailResponseDto;
+import com.capstone.eqh.domain.quiz.dto.response.QuizEditResponseDto;
 import com.capstone.eqh.domain.quiz.dto.response.QuizQuestionResponseDto;
 import com.capstone.eqh.domain.quiz.dto.response.QuizResponseDto;
 import com.capstone.eqh.domain.quiz.dto.response.QuizSubmissionResponseDto;
@@ -66,6 +67,10 @@ public class QuizService {
 
     public QuizDetailResponseDto getOne(Long quizId) {
         return QuizDetailResponseDto.from(findQuizById(quizId));
+    }
+
+    public QuizEditResponseDto getForEdit(Long quizId) {
+        return QuizEditResponseDto.from(findQuizById(quizId));
     }
 
     @Transactional
