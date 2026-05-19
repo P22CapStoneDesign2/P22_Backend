@@ -56,7 +56,15 @@ public class JwtFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
+        String rawHeader = request.getHeader(AUTHORIZATION_HEADER);
         String token = resolveToken(request);
+
+        log.debug("[JwtFilter] {} {} | servletPath={} | hdr={} | resolved={}",
+                request.getMethod(), request.getRequestURI(), request.getServletPath(),
+                rawHeader == null ? "null"
+                        : "len=" + rawHeader.length() + " prefix7=\""
+                        + rawHeader.substring(0, Math.min(7, rawHeader.length())) + "\"",
+                token != null);
 
         if (token == null) {
             filterChain.doFilter(request, response);
@@ -74,9 +82,14 @@ public class JwtFilter extends OncePerRequestFilter {
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            log.debug("[JwtFilter] auth set userId={} authorities={}", userId, userDetails.getAuthorities());
         } catch (CustomException e) {
+            log.warn("[JwtFilter] CustomException {} - {}", e.getErrorCode(), e.getMessage());
             sendErrorResponse(response, e.getErrorCode());
             return;
+        } catch (Exception e) {
+            log.error("[JwtFilter] Unexpected exception", e);
+            throw e;
         }
 
         filterChain.doFilter(request, response);

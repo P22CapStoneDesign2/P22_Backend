@@ -2,7 +2,7 @@
 
 > 이 파일은 엔티티 클래스 기반으로 유지됩니다.
 > 엔티티 변경 시 이 파일도 함께 업데이트해야 합니다.
-> 마지막 갱신: 2026-05-14
+> 마지막 갱신: 2026-05-18
 
 ---
 
@@ -67,8 +67,12 @@
 | `professor_id` | BIGINT | NOT NULL, FK → users | 출제 교수 |
 | `title` | VARCHAR(200) | NOT NULL | 퀴즈 제목 |
 | `description` | VARCHAR(500) | NULL | 퀴즈 설명 |
+| `deleted` | BOOLEAN | NOT NULL, DEFAULT false | 소프트 삭제 플래그 |
+| `deleted_at` | TIMESTAMP | NULL | 소프트 삭제 시각 |
 | `created_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
 | `updated_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
+
+> Hibernate `@SQLDelete` / `@SQLRestriction` 으로 자동 소프트 삭제 및 조회 제외 적용. `JpaRepository.delete()` 호출 시 `UPDATE quiz SET deleted=true, deleted_at=NOW()` 가 실행되며, 모든 JPA 조회에서 `deleted=false` 필터가 자동 부착된다.
 
 ---
 
@@ -88,6 +92,10 @@
 | `explanation` | TEXT | NULL | 해설 |
 | `lesson_page` | INT | NULL | 교수 지정 교안 페이지 |
 | `lesson_paragraph` | INT | NULL | 교수 지정 교안 문단 |
+| `deleted` | BOOLEAN | NOT NULL, DEFAULT false | 소프트 삭제 플래그 |
+| `deleted_at` | TIMESTAMP | NULL | 소프트 삭제 시각 |
+
+> 부모 `quiz` 가 소프트 삭제될 때 cascade 로 같이 마킹된다. `@SQLRestriction` 으로 모든 조회에서 자동 제외.
 
 ---
 
@@ -101,6 +109,10 @@
 | `question_id` | BIGINT | NOT NULL, FK → quiz_q | 소속 문제 |
 | `option_text` | VARCHAR(500) | NOT NULL | 보기 내용 |
 | `is_correct` | BOOLEAN | NOT NULL | 정답 여부 |
+| `deleted` | BOOLEAN | NOT NULL, DEFAULT false | 소프트 삭제 플래그 |
+| `deleted_at` | TIMESTAMP | NULL | 소프트 삭제 시각 |
+
+> `@SQLDelete` 만 적용 (`@SQLRestriction` 없음) — 옵션은 question 통해서만 조회되므로 question 차원에서 이미 가려진다. 데이터 손실 방지 목적.
 
 ---
 

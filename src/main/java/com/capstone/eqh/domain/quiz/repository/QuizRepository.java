@@ -9,4 +9,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface QuizRepository extends JpaRepository<Quiz, Long> {
 
     Page<Quiz> findByProfessor(User professor, Pageable pageable);
+
+    Page<Quiz> findByProfessor_Id(Long professorId, Pageable pageable);
 }

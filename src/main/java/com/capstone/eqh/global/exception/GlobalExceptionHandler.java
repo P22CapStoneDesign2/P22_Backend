@@ -10,6 +10,7 @@ package com.capstone.eqh.global.exception;
 import com.capstone.eqh.global.common.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -29,6 +30,20 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleCustomException(CustomException e) {
         log.warn("[CustomException] {} - {}", e.getErrorCode(), e.getMessage());
         ErrorCode errorCode = e.getErrorCode();
+        return ResponseEntity
+                .status(errorCode.getStatusCode())
+                .body(ApiResponse.failure(errorCode.getStatusCode(), errorCode.getMessage()));
+    }
+
+    /**
+     * @PreAuthorize 등 메서드 보안에서 던지는 인가 거부 처리.
+     * 필터 체인 레벨 거부는 SecurityConfig.accessDeniedHandler 가 처리하므로,
+     * 여기서는 컨트롤러 진입 후 메서드 보안에서 발생한 케이스만 다룬다.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException e) {
+        log.warn("[AccessDeniedException] {}", e.getMessage());
+        ErrorCode errorCode = ErrorCode.FORBIDDEN;
         return ResponseEntity
                 .status(errorCode.getStatusCode())
                 .body(ApiResponse.failure(errorCode.getStatusCode(), errorCode.getMessage()));

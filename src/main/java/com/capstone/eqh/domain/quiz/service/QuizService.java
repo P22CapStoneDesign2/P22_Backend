@@ -23,6 +23,7 @@ import com.capstone.eqh.domain.quiz.repository.QuizRepository;
 import com.capstone.eqh.domain.quiz.repository.QuizSubmissionAnswerRepository;
 import com.capstone.eqh.domain.quiz.repository.QuizSubmissionRepository;
 import com.capstone.eqh.domain.user.entity.User;
+import com.capstone.eqh.domain.user.enums.Role;
 import com.capstone.eqh.domain.user.repository.UserRepository;
 import com.capstone.eqh.global.exception.CustomException;
 import com.capstone.eqh.global.exception.ErrorCode;
@@ -60,8 +61,11 @@ public class QuizService {
         return QuizResponseDto.from(quizRepository.save(quiz));
     }
 
-    public Page<QuizResponseDto> getAll(Pageable pageable) {
-        return quizRepository.findAll(pageable).map(QuizResponseDto::from);
+    public Page<QuizResponseDto> getAll(Long userId, Role role, Pageable pageable) {
+        Page<Quiz> quizzes = (role == Role.PROF)
+                ? quizRepository.findByProfessor_Id(userId, pageable)
+                : quizRepository.findAll(pageable);
+        return quizzes.map(QuizResponseDto::from);
     }
 
     public QuizDetailResponseDto getOne(Long quizId) {

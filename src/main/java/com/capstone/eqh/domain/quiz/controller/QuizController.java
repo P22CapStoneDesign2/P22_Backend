@@ -12,6 +12,7 @@ import com.capstone.eqh.domain.quiz.dto.response.QuizResponseDto;
 import com.capstone.eqh.domain.quiz.dto.response.QuizSubmissionResponseDto;
 import com.capstone.eqh.domain.quiz.dto.response.WrongAnswerResponseDto;
 import com.capstone.eqh.domain.quiz.service.QuizService;
+import com.capstone.eqh.domain.user.enums.Role;
 import com.capstone.eqh.global.common.ApiResponse;
 import com.capstone.eqh.global.security.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -47,8 +48,11 @@ public class QuizController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<QuizResponseDto>>> getAll(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(ApiResponse.success(200, "퀴즈 목록 조회 성공", quizService.getAll(pageable)));
+        Role role = userDetails.getUser().getRole();
+        return ResponseEntity.ok(ApiResponse.success(200, "퀴즈 목록 조회 성공",
+                quizService.getAll(userDetails.getUserId(), role, pageable)));
     }
 
     @GetMapping("/{quizId}")
@@ -57,7 +61,7 @@ public class QuizController {
     }
 
     @GetMapping("/{quizId}/edit")
-    @PreAuthorize("(hasRole('PROF') and @quizService.isOwner(#quizId, principal)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('PROF') and @quizService.isOwner(#quizId, principal.userId)) or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<QuizEditResponseDto>> getForEdit(@PathVariable Long quizId) {
         return ResponseEntity.ok(ApiResponse.success(200, "퀴즈 수정용 조회 성공",
                 quizService.getForEdit(quizId)));
