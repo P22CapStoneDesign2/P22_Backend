@@ -49,15 +49,20 @@ public class QuizController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<QuizResponseDto>>> getAll(
             @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(required = false) Long lessonId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         Role role = userDetails.getUser().getRole();
         return ResponseEntity.ok(ApiResponse.success(200, "퀴즈 목록 조회 성공",
-                quizService.getAll(userDetails.getUserId(), role, pageable)));
+                quizService.getAll(userDetails.getUserId(), role, lessonId, pageable)));
     }
 
     @GetMapping("/{quizId}")
-    public ResponseEntity<ApiResponse<QuizDetailResponseDto>> getOne(@PathVariable Long quizId) {
-        return ResponseEntity.ok(ApiResponse.success(200, "퀴즈 조회 성공", quizService.getOne(quizId)));
+    public ResponseEntity<ApiResponse<QuizDetailResponseDto>> getOne(
+            @PathVariable Long quizId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Role role = userDetails.getUser().getRole();
+        return ResponseEntity.ok(ApiResponse.success(200, "퀴즈 조회 성공",
+                quizService.getOne(quizId, userDetails.getUserId(), role)));
     }
 
     @GetMapping("/{quizId}/edit")

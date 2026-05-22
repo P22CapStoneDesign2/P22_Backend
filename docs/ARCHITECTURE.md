@@ -75,19 +75,29 @@ src/main/java/com/capstone/eqh/
 │   │
 │   └── lesson/
 │       ├── entity/
-│       │   └── Lesson.java                            # lecture_material 테이블
+│       │   ├── Lesson.java                            # lecture_material 테이블
+│       │   └── LessonEnrollment.java                  # lesson_enrollment 테이블 — 학생 수강 신청
+│       ├── enums/
+│       │   └── EnrollmentStatus.java                  # PENDING / APPROVED / REJECTED
 │       ├── repository/
-│       │   └── LessonRepository.java
+│       │   ├── LessonRepository.java
+│       │   └── LessonEnrollmentRepository.java
 │       ├── dto/
 │       │   ├── request/
 │       │   │   ├── LessonCreateRequestDto.java
 │       │   │   └── LessonUpdateRequestDto.java
 │       │   └── response/
-│       │       └── LessonResponseDto.java
+│       │       ├── LessonResponseDto.java
+│       │       ├── EnrollmentResponseDto.java         # 수강 신청 단건
+│       │       ├── EnrollmentDecisionResponseDto.java # 수락/거절 결과
+│       │       ├── EnrollmentListItemResponseDto.java # 교수용 신청 목록 항목 (학생 정보 포함)
+│       │       └── MyLessonResponseDto.java           # 학생 my 교안 목록 항목 (approvedAt 포함)
 │       ├── service/
-│       │   └── LessonService.java
+│       │   ├── LessonService.java
+│       │   └── LessonEnrollmentService.java
 │       └── controller/
 │           ├── LessonController.java                  # /api/lessons/**
+│           ├── LessonEnrollmentController.java        # /api/lessons/{id}/enrollments/**, /api/lessons/my
 │           └── LessonAdminController.java             # /api/admin/lessons/**
 │
 └── global/
@@ -129,8 +139,8 @@ src/main/java/com/capstone/eqh/
 | 도메인 | 경로 | 주요 역할 |
 |--------|------|-----------|
 | `user` | `/api/auth/**`, `/api/users/**` | 인증, 회원가입, 프로필 관리 |
-| `quiz` | `/api/quiz/**` | 퀴즈 세트·문제 관리, 채점, 오답 조회 |
-| `lesson` | `/api/lessons/**` | 교안 뷰어 |
+| `quiz` | `/api/quiz/**` | 퀴즈 세트·문제 관리, 채점, 오답 조회 (퀴즈는 단일 교안에 속함) |
+| `lesson` | `/api/lessons/**` | 교안 뷰어, 학생 수강 신청·교수 수락 |
 
 ## global 책임 요약
 
@@ -149,9 +159,14 @@ src/main/java/com/capstone/eqh/
 ### 엔티티 관계
 
 ```
+Quiz (N) ──── (1) Lesson               ← lesson_id FK (NOT NULL) — 게이팅 기준
 Quiz (1) ──── (N) QuizQuestion
-QuizQuestion (N) ──── (1) Lesson      ← anchor_id FK (lecture_material)
+QuizQuestion (N) ──── (1) Lesson       ← anchor_id FK (nullable) — 페이지/문단 참조
 QuizQuestion (1) ──── (N) QuizOption
+
+LessonEnrollment (N) ──── (1) Lesson
+LessonEnrollment (N) ──── (1) User (student)
+LessonEnrollment (N) ──── (0..1) User (decidedBy)   ← PROF/ADMIN
 
 QuizSubmission (N) ──── (1) Quiz
 QuizSubmission (N) ──── (1) User (student)
@@ -166,6 +181,21 @@ QuizSubmissionAnswer (N) ──── (1) QuizQuestion
 | `anchor` | `anchor_id` | 참조 교안 FK → lecture_material (nullable) |
 | `lessonPage` | `lesson_page` | 교수가 지정한 교안 페이지 번호 |
 | `lessonParagraph` | `lesson_paragraph` | 교수가 지정한 교안 문단 번호 |
+
+### 학생 수강 게이팅 데이터 흐름
+
+```
+USER → GET /api/quiz/{quizId}                            (또는 POST submit)
+  → QuizService.assertEnrolledIfStudent(quiz, userId)
+  → LessonEnrollmentRepository.existsByLessonIdAndStudentIdAndStatus(quiz.lesson.id, userId, APPROVED)
+  → false 이면 ENROLLMENT_NOT_APPROVED 403
+```
+
+USER 가 `GET /api/lessons/my` 호출 시:
+```
+LessonEnrollmentRepository.findApprovedByStudentId(userId, pageable)
+  → MyLessonResponseDto (lesson + approvedAt)
+```
 
 ### 오답 조회 데이터 흐름
 
@@ -192,12 +222,14 @@ GET /api/quiz/wrong-answers
   - `UserAuthService` — 로그인, 토큰 재발급, 로그아웃
   - `UserSignupService` — 회원가입 (LOCAL), 소셜 유저 조회/생성 (`findOrCreateSocialUser`)
   - `UserService` — 프로필 조회, 수정, 탈퇴
-  - `QuizService` — 퀴즈 CRUD, 문제 관리, 채점, 오답 조회
+  - `QuizService` — 퀴즈 CRUD, 문제 관리, 채점, 오답 조회. USER 호출 시 `LessonEnrollmentRepository`로 게이팅
+  - `LessonEnrollmentService` — 학생 신청, 교수 수락/거절, my 조회
 - Controller는 URL 경로 기준으로 분리
   - `AuthController` — `/api/auth/**`
   - `UserController` — `/api/users/**`
   - `QuizController` — `/api/quiz/**`
   - `LessonController` — `/api/lessons/**`
+  - `LessonEnrollmentController` — `/api/lessons/{id}/enrollments/**`, `/api/lessons/my`
 - **소셜 로그인 유저 식별**: `provider` + `providerId` (카카오 OIDC `sub` claim) 조합
 - `PasswordEncoder` 빈은 순환 의존성 방지를 위해 `PasswordConfig`에 별도 분리
 - **퀴즈 채점**: `quiz_q.correct_answer`와 `student_answer`를 대소문자 무시 비교

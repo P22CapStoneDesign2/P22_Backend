@@ -1,6 +1,8 @@
 package com.capstone.eqh.domain.quiz.service;
 
 import com.capstone.eqh.domain.lesson.entity.Lesson;
+import com.capstone.eqh.domain.lesson.enums.EnrollmentStatus;
+import com.capstone.eqh.domain.lesson.repository.LessonEnrollmentRepository;
 import com.capstone.eqh.domain.lesson.repository.LessonRepository;
 import com.capstone.eqh.domain.quiz.dto.request.QuizCreateRequestDto;
 import com.capstone.eqh.domain.quiz.dto.request.QuizQuestionCreateRequestDto;
@@ -29,6 +31,7 @@ import com.capstone.eqh.global.exception.CustomException;
 import com.capstone.eqh.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,28 +51,65 @@ public class QuizService {
     private final QuizSubmissionRepository submissionRepository;
     private final QuizSubmissionAnswerRepository submissionAnswerRepository;
     private final LessonRepository lessonRepository;
+    private final LessonEnrollmentRepository enrollmentRepository;
     private final UserRepository userRepository;
 
     @Transactional
     public QuizResponseDto create(QuizCreateRequestDto request, Long professorId) {
         User professor = findUserById(professorId);
+        Lesson lesson = lessonRepository.findById(request.lessonId())
+                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
+
+        if (lesson.getCreatedBy() == null
+                || !lesson.getCreatedBy().getId().equals(professorId)) {
+            throw new CustomException(ErrorCode.QUIZ_LESSON_NOT_OWNED);
+        }
+
         Quiz quiz = Quiz.builder()
                 .professor(professor)
+                .lesson(lesson)
                 .title(request.title())
                 .description(request.description())
                 .build();
         return QuizResponseDto.from(quizRepository.save(quiz));
     }
 
-    public Page<QuizResponseDto> getAll(Long userId, Role role, Pageable pageable) {
-        Page<Quiz> quizzes = (role == Role.PROF)
-                ? quizRepository.findByProfessor_Id(userId, pageable)
-                : quizRepository.findAll(pageable);
+    public Page<QuizResponseDto> getAll(Long userId, Role role, Long lessonId, Pageable pageable) {
+        Page<Quiz> quizzes = switch (role) {
+            case PROF -> (lessonId == null)
+                    ? quizRepository.findByProfessor_Id(userId, pageable)
+                    : quizRepository.findByProfessor_IdAndLesson_Id(userId, lessonId, pageable);
+            case ADMIN -> (lessonId == null)
+                    ? quizRepository.findAll(pageable)
+                    : quizRepository.findByLesson_Id(lessonId, pageable);
+            case USER -> findQuizzesForStudent(userId, lessonId, pageable);
+        };
         return quizzes.map(QuizResponseDto::from);
     }
 
-    public QuizDetailResponseDto getOne(Long quizId) {
-        return QuizDetailResponseDto.from(findQuizById(quizId));
+    private Page<Quiz> findQuizzesForStudent(Long studentId, Long lessonId, Pageable pageable) {
+        if (lessonId != null) {
+            boolean approved = enrollmentRepository.existsByLessonIdAndStudentIdAndStatus(
+                    lessonId, studentId, EnrollmentStatus.APPROVED);
+            if (!approved) {
+                return new PageImpl<>(List.of(), pageable, 0);
+            }
+            return quizRepository.findByLesson_Id(lessonId, pageable);
+        }
+        List<Long> approvedLessonIds = enrollmentRepository.findLessonIdsByStudentIdAndStatus(
+                studentId, EnrollmentStatus.APPROVED);
+        if (approvedLessonIds.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+        return quizRepository.findByLesson_IdIn(approvedLessonIds, pageable);
+    }
+
+    public QuizDetailResponseDto getOne(Long quizId, Long userId, Role role) {
+        Quiz quiz = findQuizById(quizId);
+        if (role == Role.USER) {
+            assertEnrolledIfStudent(quiz, userId);
+        }
+        return QuizDetailResponseDto.from(quiz);
     }
 
     public QuizEditResponseDto getForEdit(Long quizId) {
@@ -158,6 +198,8 @@ public class QuizService {
         Quiz quiz = findQuizById(quizId);
         User student = findUserById(studentId);
 
+        assertEnrolledIfStudent(quiz, studentId);
+
         if (submissionRepository.existsByQuizAndStudent(quiz, student)) {
             throw new CustomException(ErrorCode.QUIZ_ALREADY_SUBMITTED);
         }
@@ -231,5 +273,13 @@ public class QuizService {
         if (anchorId == null) return null;
         return lessonRepository.findById(anchorId)
                 .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
+    }
+
+    private void assertEnrolledIfStudent(Quiz quiz, Long studentId) {
+        boolean approved = enrollmentRepository.existsByLessonIdAndStudentIdAndStatus(
+                quiz.getLesson().getId(), studentId, EnrollmentStatus.APPROVED);
+        if (!approved) {
+            throw new CustomException(ErrorCode.ENROLLMENT_NOT_APPROVED);
+        }
     }
 }

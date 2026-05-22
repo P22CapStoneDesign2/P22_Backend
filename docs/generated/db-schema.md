@@ -2,7 +2,7 @@
 
 > 이 파일은 엔티티 클래스 기반으로 유지됩니다.
 > 엔티티 변경 시 이 파일도 함께 업데이트해야 합니다.
-> 마지막 갱신: 2026-05-18
+> 마지막 갱신: 2026-05-21
 
 ---
 
@@ -57,6 +57,27 @@
 
 ---
 
+## lesson_enrollment (수강 신청)
+
+엔티티: `domain/lesson/entity/LessonEnrollment.java`
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|------|------|------|------|
+| `id` | BIGINT | PK, AUTO_INCREMENT | |
+| `lesson_id` | BIGINT | NOT NULL, FK → lecture_material | 신청 대상 교안 |
+| `student_id` | BIGINT | NOT NULL, FK → users (USER) | 신청 학생 |
+| `status` | VARCHAR(10) | NOT NULL | `PENDING` \| `APPROVED` \| `REJECTED` |
+| `requested_at` | TIMESTAMP | NOT NULL | 신청 시각 |
+| `decided_at` | TIMESTAMP | NULL | 결정 시각 (APPROVED/REJECTED 시 기록) |
+| `decided_by` | BIGINT | NULL, FK → users (PROF/ADMIN) | 결정자 |
+| `created_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
+| `updated_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
+| UNIQUE | — | (`lesson_id`, `student_id`) | 학생-교안 1:1 |
+
+> `EnrollmentStatus` enum 은 `domain/lesson/enums/EnrollmentStatus.java` 에 정의.
+
+---
+
 ## quiz (퀴즈 세트)
 
 엔티티: `domain/quiz/entity/Quiz.java`
@@ -65,12 +86,15 @@
 |------|------|------|------|
 | `id` | BIGINT | PK, AUTO_INCREMENT | |
 | `professor_id` | BIGINT | NOT NULL, FK → users | 출제 교수 |
+| `lesson_id` | BIGINT | NOT NULL, FK → lecture_material | 퀴즈가 속한 교안 (게이팅 기준) |
 | `title` | VARCHAR(200) | NOT NULL | 퀴즈 제목 |
 | `description` | VARCHAR(500) | NULL | 퀴즈 설명 |
 | `deleted` | BOOLEAN | NOT NULL, DEFAULT false | 소프트 삭제 플래그 |
 | `deleted_at` | TIMESTAMP | NULL | 소프트 삭제 시각 |
 | `created_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
 | `updated_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
+
+> 1차 범위에서 `lesson_id`는 생성 시점 고정, `PUT /api/quiz/{quizId}`에서는 변경 불가.
 
 > Hibernate `@SQLDelete` / `@SQLRestriction` 으로 자동 소프트 삭제 및 조회 제외 적용. `JpaRepository.delete()` 호출 시 `UPDATE quiz SET deleted=true, deleted_at=NOW()` 가 실행되며, 모든 JPA 조회에서 `deleted=false` 필터가 자동 부착된다.
 
@@ -152,6 +176,11 @@
 users (1) ──── (N) lecture_material
 users (1) ──── (N) quiz
 users (1) ──── (N) quiz_sub
+users (1) ──── (N) lesson_enrollment       ← student_id
+users (1) ──── (N) lesson_enrollment       ← decided_by (nullable)
+
+lecture_material (1) ──── (N) lesson_enrollment
+lecture_material (1) ──── (N) quiz         ← lesson_id (NOT NULL)
 
 quiz (1) ──── (N) quiz_q
 quiz (1) ──── (N) quiz_sub
