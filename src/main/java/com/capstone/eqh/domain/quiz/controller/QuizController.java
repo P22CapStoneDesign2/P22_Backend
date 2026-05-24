@@ -38,7 +38,7 @@ public class QuizController {
 
     @PostMapping
     @PreAuthorize("hasRole('PROF') and principal.active")
-    public ResponseEntity<ApiResponse<QuizResponseDto>> create(
+    public ResponseEntity<ApiResponse<QuizDetailResponseDto>> create(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody QuizCreateRequestDto request) {
         return ResponseEntity.status(HttpStatus.CREATED)

@@ -55,7 +55,7 @@ public class QuizService {
     private final UserRepository userRepository;
 
     @Transactional
-    public QuizResponseDto create(QuizCreateRequestDto request, Long professorId) {
+    public QuizDetailResponseDto create(QuizCreateRequestDto request, Long professorId) {
         User professor = findUserById(professorId);
         Lesson lesson = lessonRepository.findById(request.lessonId())
                 .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
@@ -71,7 +71,13 @@ public class QuizService {
                 .title(request.title())
                 .description(request.description())
                 .build();
-        return QuizResponseDto.from(quizRepository.save(quiz));
+        quizRepository.save(quiz);
+
+        if (request.questions() != null) {
+            request.questions().forEach(q -> quiz.getQuestions().add(buildAndSaveQuestion(quiz, q)));
+        }
+
+        return QuizDetailResponseDto.from(quiz);
     }
 
     public Page<QuizResponseDto> getAll(Long userId, Role role, Long lessonId, Pageable pageable) {
@@ -131,7 +137,10 @@ public class QuizService {
     @Transactional
     public QuizQuestionResponseDto addQuestion(Long quizId, QuizQuestionCreateRequestDto request) {
         Quiz quiz = findQuizById(quizId);
+        return QuizQuestionResponseDto.from(buildAndSaveQuestion(quiz, request));
+    }
 
+    private QuizQuestion buildAndSaveQuestion(Quiz quiz, QuizQuestionCreateRequestDto request) {
         QuizQuestion question = QuizQuestion.builder()
                 .quiz(quiz)
                 .anchor(resolveAnchor(request.anchorId()))
@@ -157,7 +166,7 @@ public class QuizService {
             saved.replaceOptions(options);
         }
 
-        return QuizQuestionResponseDto.from(saved);
+        return saved;
     }
 
     @Transactional
