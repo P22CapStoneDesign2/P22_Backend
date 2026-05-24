@@ -2,7 +2,11 @@
 
 > 이 파일은 엔티티 클래스 기반으로 유지됩니다.
 > 엔티티 변경 시 이 파일도 함께 업데이트해야 합니다.
+<<<<<<< Updated upstream
 > 마지막 갱신: 2026-05-21
+=======
+> 마지막 갱신: 2026-05-25
+>>>>>>> Stashed changes
 
 ---
 
@@ -42,16 +46,32 @@
 
 ---
 
-## lecture_material (교안)
+## lesson (강의)
 
 엔티티: `domain/lesson/entity/Lesson.java`
 
 | 컬럼 | 타입 | 제약 | 설명 |
 |------|------|------|------|
 | `id` | BIGINT | PK, AUTO_INCREMENT | |
+| `title` | VARCHAR(255) | NOT NULL | 강의 제목 |
+| `description` | TEXT | NULL | 강의 설명 |
+| `professor_id` | BIGINT | NULL, FK → users | 강의 생성 교수 |
+| `created_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
+| `updated_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
+
+---
+
+## lecture_material (교안)
+
+엔티티: `domain/lesson/entity/LessonMaterial.java`
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|------|------|------|------|
+| `id` | BIGINT | PK, AUTO_INCREMENT | |
+| `lesson_id` | BIGINT | NOT NULL, FK → lesson | 소속 강의 |
 | `title` | VARCHAR(255) | NOT NULL | 교안 제목 |
 | `content` | TEXT | NULL | 교안 설명 (`description` 필드) |
-| `professor_id` | BIGINT | NULL, FK → users | 작성자 |
+| `professor_id` | BIGINT | NULL, FK → users | 교안 작성 교수 |
 | `created_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
 | `updated_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
 
@@ -64,7 +84,7 @@
 | 컬럼 | 타입 | 제약 | 설명 |
 |------|------|------|------|
 | `id` | BIGINT | PK, AUTO_INCREMENT | |
-| `lesson_id` | BIGINT | NOT NULL, FK → lecture_material | 신청 대상 교안 |
+| `lesson_id` | BIGINT | NOT NULL, FK → lesson | 신청 대상 강의 |
 | `student_id` | BIGINT | NOT NULL, FK → users (USER) | 신청 학생 |
 | `status` | VARCHAR(10) | NOT NULL | `PENDING` \| `APPROVED` \| `REJECTED` |
 | `requested_at` | TIMESTAMP | NOT NULL | 신청 시각 |
@@ -72,7 +92,7 @@
 | `decided_by` | BIGINT | NULL, FK → users (PROF/ADMIN) | 결정자 |
 | `created_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
 | `updated_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
-| UNIQUE | — | (`lesson_id`, `student_id`) | 학생-교안 1:1 |
+| UNIQUE | — | (`lesson_id`, `student_id`) | 학생-강의 1:1 |
 
 > `EnrollmentStatus` enum 은 `domain/lesson/enums/EnrollmentStatus.java` 에 정의.
 
@@ -173,20 +193,23 @@
 ## ERD 요약
 
 ```
-users (1) ──── (N) lecture_material
+users (1) ──── (N) lesson                 ← professor_id
+users (1) ──── (N) lecture_material       ← professor_id
 users (1) ──── (N) quiz
 users (1) ──── (N) quiz_sub
-users (1) ──── (N) lesson_enrollment       ← student_id
-users (1) ──── (N) lesson_enrollment       ← decided_by (nullable)
+users (1) ──── (N) lesson_enrollment      ← student_id
+users (1) ──── (N) lesson_enrollment      ← decided_by (nullable)
 
-lecture_material (1) ──── (N) lesson_enrollment
-lecture_material (1) ──── (N) quiz         ← lesson_id (NOT NULL)
+lesson (1) ──── (N) lecture_material      ← lesson_id (NOT NULL)
+lesson (1) ──── (N) lesson_enrollment     ← lesson_id (NOT NULL)
+
+lecture_material (1) ──── (N) quiz        ← lesson_id (NOT NULL)
 
 quiz (1) ──── (N) quiz_q
 quiz (1) ──── (N) quiz_sub
 
 quiz_q (1) ──── (N) quiz_opt
-quiz_q (N) ──── (1) lecture_material   ← anchor_id (nullable)
+quiz_q (N) ──── (1) lecture_material  ← anchor_id (nullable)
 
 quiz_sub (1) ──── (N) quiz_sub_answer
 quiz_sub_answer (N) ──── (1) quiz_q

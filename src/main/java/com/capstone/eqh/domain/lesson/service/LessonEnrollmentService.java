@@ -8,7 +8,6 @@ import com.capstone.eqh.domain.lesson.entity.Lesson;
 import com.capstone.eqh.domain.lesson.entity.LessonEnrollment;
 import com.capstone.eqh.domain.lesson.enums.EnrollmentStatus;
 import com.capstone.eqh.domain.lesson.repository.LessonEnrollmentRepository;
-import com.capstone.eqh.domain.lesson.repository.LessonRepository;
 import com.capstone.eqh.domain.user.entity.User;
 import com.capstone.eqh.domain.user.repository.UserRepository;
 import com.capstone.eqh.global.exception.CustomException;
@@ -25,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class LessonEnrollmentService {
 
     private final LessonEnrollmentRepository enrollmentRepository;
-    private final LessonRepository lessonRepository;
+    private final LessonService lessonService;
     private final UserRepository userRepository;
 
     @Transactional
@@ -98,8 +97,7 @@ public class LessonEnrollmentService {
     }
 
     private Lesson findLesson(Long lessonId) {
-        return lessonRepository.findById(lessonId)
-                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
+        return lessonService.findById(lessonId);
     }
 
     private User findUser(Long userId) {

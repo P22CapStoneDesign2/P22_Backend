@@ -6,7 +6,7 @@ import com.capstone.eqh.domain.lesson.entity.Lesson;
 import com.capstone.eqh.domain.lesson.entity.LessonEnrollment;
 import com.capstone.eqh.domain.lesson.enums.EnrollmentStatus;
 import com.capstone.eqh.domain.lesson.repository.LessonEnrollmentRepository;
-import com.capstone.eqh.domain.lesson.repository.LessonRepository;
+import com.capstone.eqh.domain.lesson.service.LessonService;
 import com.capstone.eqh.domain.user.entity.User;
 import com.capstone.eqh.domain.user.enums.AuthProvider;
 import com.capstone.eqh.domain.user.enums.Role;
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
 class LessonEnrollmentServiceTest {
 
     @Mock LessonEnrollmentRepository enrollmentRepository;
-    @Mock LessonRepository lessonRepository;
+    @Mock LessonService lessonService;
     @Mock UserRepository userRepository;
     @InjectMocks LessonEnrollmentService service;
 
@@ -74,7 +74,7 @@ class LessonEnrollmentServiceTest {
         User student = createUser(2L, Role.USER);
         Lesson lesson = createLesson(3L, prof);
 
-        when(lessonRepository.findById(3L)).thenReturn(Optional.of(lesson));
+        when(lessonService.findById(3L)).thenReturn(lesson);
         when(userRepository.findById(2L)).thenReturn(Optional.of(student));
         when(enrollmentRepository.findByLessonIdAndStudentId(3L, 2L)).thenReturn(Optional.empty());
         when(enrollmentRepository.save(any(LessonEnrollment.class))).thenAnswer(inv -> {
@@ -99,7 +99,7 @@ class LessonEnrollmentServiceTest {
         Lesson lesson = createLesson(3L, prof);
         LessonEnrollment existing = createEnrollment(99L, lesson, student);
 
-        when(lessonRepository.findById(3L)).thenReturn(Optional.of(lesson));
+        when(lessonService.findById(3L)).thenReturn(lesson);
         when(userRepository.findById(2L)).thenReturn(Optional.of(student));
         when(enrollmentRepository.findByLessonIdAndStudentId(3L, 2L)).thenReturn(Optional.of(existing));
 
@@ -112,7 +112,7 @@ class LessonEnrollmentServiceTest {
     @Test
     @DisplayName("request 실패: 교안이 없으면 LESSON_NOT_FOUND")
     void request_lessonNotFound() {
-        when(lessonRepository.findById(99L)).thenReturn(Optional.empty());
+        when(lessonService.findById(99L)).thenThrow(new CustomException(ErrorCode.LESSON_NOT_FOUND));
 
         assertThatThrownBy(() -> service.request(99L, 2L))
                 .isInstanceOf(CustomException.class)

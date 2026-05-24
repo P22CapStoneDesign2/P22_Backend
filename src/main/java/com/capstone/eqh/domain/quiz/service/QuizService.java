@@ -1,9 +1,9 @@
 package com.capstone.eqh.domain.quiz.service;
 
-import com.capstone.eqh.domain.lesson.entity.Lesson;
+import com.capstone.eqh.domain.lesson.entity.LessonMaterial;
 import com.capstone.eqh.domain.lesson.enums.EnrollmentStatus;
 import com.capstone.eqh.domain.lesson.repository.LessonEnrollmentRepository;
-import com.capstone.eqh.domain.lesson.repository.LessonRepository;
+import com.capstone.eqh.domain.lesson.repository.LessonMaterialRepository;
 import com.capstone.eqh.domain.quiz.dto.request.QuizCreateRequestDto;
 import com.capstone.eqh.domain.quiz.dto.request.QuizQuestionCreateRequestDto;
 import com.capstone.eqh.domain.quiz.dto.request.QuizQuestionUpdateRequestDto;
@@ -50,58 +50,57 @@ public class QuizService {
     private final QuizQuestionRepository questionRepository;
     private final QuizSubmissionRepository submissionRepository;
     private final QuizSubmissionAnswerRepository submissionAnswerRepository;
-    private final LessonRepository lessonRepository;
+    private final LessonMaterialRepository materialRepository;
     private final LessonEnrollmentRepository enrollmentRepository;
     private final UserRepository userRepository;
 
     @Transactional
     public QuizResponseDto create(QuizCreateRequestDto request, Long professorId) {
         User professor = findUserById(professorId);
-        Lesson lesson = lessonRepository.findById(request.lessonId())
-                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
+        LessonMaterial material = materialRepository.findById(request.materialId())
+                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_MATERIAL_NOT_FOUND));
 
-        if (lesson.getCreatedBy() == null
-                || !lesson.getCreatedBy().getId().equals(professorId)) {
+        if (material.getCreatedBy() == null
+                || !material.getCreatedBy().getId().equals(professorId)) {
             throw new CustomException(ErrorCode.QUIZ_LESSON_NOT_OWNED);
         }
 
         Quiz quiz = Quiz.builder()
                 .professor(professor)
-                .lesson(lesson)
+                .material(material)
                 .title(request.title())
                 .description(request.description())
                 .build();
         return QuizResponseDto.from(quizRepository.save(quiz));
     }
 
-    public Page<QuizResponseDto> getAll(Long userId, Role role, Long lessonId, Pageable pageable) {
+    public Page<QuizResponseDto> getAll(Long userId, Role role, Long materialId, Pageable pageable) {
         Page<Quiz> quizzes = switch (role) {
-            case PROF -> (lessonId == null)
+            case PROF -> (materialId == null)
                     ? quizRepository.findByProfessor_Id(userId, pageable)
-                    : quizRepository.findByProfessor_IdAndLesson_Id(userId, lessonId, pageable);
-            case ADMIN -> (lessonId == null)
+                    : quizRepository.findByProfessor_IdAndMaterial_Id(userId, materialId, pageable);
+            case ADMIN -> (materialId == null)
                     ? quizRepository.findAll(pageable)
-                    : quizRepository.findByLesson_Id(lessonId, pageable);
-            case USER -> findQuizzesForStudent(userId, lessonId, pageable);
+                    : quizRepository.findByMaterial_Id(materialId, pageable);
+            case USER -> findQuizzesForStudent(userId, materialId, pageable);
         };
         return quizzes.map(QuizResponseDto::from);
     }
 
-    private Page<Quiz> findQuizzesForStudent(Long studentId, Long lessonId, Pageable pageable) {
-        if (lessonId != null) {
+    private Page<Quiz> findQuizzesForStudent(Long studentId, Long materialId, Pageable pageable) {
+        if (materialId != null) {
+            LessonMaterial material = materialRepository.findById(materialId).orElse(null);
+            if (material == null) return new PageImpl<>(List.of(), pageable, 0);
+            Long lessonId = material.getLesson().getId();
             boolean approved = enrollmentRepository.existsByLessonIdAndStudentIdAndStatus(
                     lessonId, studentId, EnrollmentStatus.APPROVED);
-            if (!approved) {
-                return new PageImpl<>(List.of(), pageable, 0);
-            }
-            return quizRepository.findByLesson_Id(lessonId, pageable);
+            if (!approved) return new PageImpl<>(List.of(), pageable, 0);
+            return quizRepository.findByMaterial_Id(materialId, pageable);
         }
         List<Long> approvedLessonIds = enrollmentRepository.findLessonIdsByStudentIdAndStatus(
                 studentId, EnrollmentStatus.APPROVED);
-        if (approvedLessonIds.isEmpty()) {
-            return new PageImpl<>(List.of(), pageable, 0);
-        }
-        return quizRepository.findByLesson_IdIn(approvedLessonIds, pageable);
+        if (approvedLessonIds.isEmpty()) return new PageImpl<>(List.of(), pageable, 0);
+        return quizRepository.findByMaterial_Lesson_IdIn(approvedLessonIds, pageable);
     }
 
     public QuizDetailResponseDto getOne(Long quizId, Long userId, Role role) {
@@ -269,15 +268,16 @@ public class QuizService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 
-    private Lesson resolveAnchor(Long anchorId) {
+    private LessonMaterial resolveAnchor(Long anchorId) {
         if (anchorId == null) return null;
-        return lessonRepository.findById(anchorId)
-                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
+        return materialRepository.findById(anchorId)
+                .orElseThrow(() -> new CustomException(ErrorCode.LESSON_MATERIAL_NOT_FOUND));
     }
 
     private void assertEnrolledIfStudent(Quiz quiz, Long studentId) {
+        Long lessonId = quiz.getMaterial().getLesson().getId();
         boolean approved = enrollmentRepository.existsByLessonIdAndStudentIdAndStatus(
-                quiz.getLesson().getId(), studentId, EnrollmentStatus.APPROVED);
+                lessonId, studentId, EnrollmentStatus.APPROVED);
         if (!approved) {
             throw new CustomException(ErrorCode.ENROLLMENT_NOT_APPROVED);
         }

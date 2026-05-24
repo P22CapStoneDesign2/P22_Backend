@@ -1,12 +1,14 @@
 package com.capstone.eqh.domain.quiz.service;
 
 import com.capstone.eqh.domain.lesson.entity.Lesson;
+import com.capstone.eqh.domain.lesson.entity.LessonMaterial;
 import com.capstone.eqh.domain.lesson.enums.EnrollmentStatus;
 import com.capstone.eqh.domain.lesson.repository.LessonEnrollmentRepository;
-import com.capstone.eqh.domain.lesson.repository.LessonRepository;
+import com.capstone.eqh.domain.lesson.repository.LessonMaterialRepository;
 import com.capstone.eqh.domain.quiz.dto.request.QuizCreateRequestDto;
 import com.capstone.eqh.domain.quiz.dto.request.QuizSubmitRequestDto;
 import com.capstone.eqh.domain.quiz.dto.request.QuizUpdateRequestDto;
+import com.capstone.eqh.domain.quiz.dto.response.QuizDetailResponseDto;
 import com.capstone.eqh.domain.quiz.dto.response.QuizResponseDto;
 import com.capstone.eqh.domain.quiz.dto.response.QuizSubmissionResponseDto;
 import com.capstone.eqh.domain.quiz.entity.Quiz;
@@ -52,7 +54,7 @@ class QuizServiceTest {
     @Mock QuizQuestionRepository questionRepository;
     @Mock QuizSubmissionRepository submissionRepository;
     @Mock QuizSubmissionAnswerRepository submissionAnswerRepository;
-    @Mock LessonRepository lessonRepository;
+    @Mock LessonMaterialRepository materialRepository;
     @Mock LessonEnrollmentRepository enrollmentRepository;
     @Mock UserRepository userRepository;
     @InjectMocks QuizService quizService;
@@ -71,18 +73,29 @@ class QuizServiceTest {
 
     private Lesson createLesson(Long id, User professor) {
         Lesson lesson = Lesson.builder()
-                .title("교안 " + id)
-                .description("내용")
+                .title("강의 " + id)
+                .description("설명")
                 .createdBy(professor)
                 .build();
         ReflectionTestUtils.setField(lesson, "id", id);
         return lesson;
     }
 
-    private Quiz createQuiz(Long id, User professor, Lesson lesson) {
+    private LessonMaterial createMaterial(Long id, Lesson lesson, User professor) {
+        LessonMaterial material = LessonMaterial.builder()
+                .lesson(lesson)
+                .title("교안 " + id)
+                .description("내용")
+                .createdBy(professor)
+                .build();
+        ReflectionTestUtils.setField(material, "id", id);
+        return material;
+    }
+
+    private Quiz createQuiz(Long id, User professor, LessonMaterial material) {
         Quiz quiz = Quiz.builder()
                 .professor(professor)
-                .lesson(lesson)
+                .material(material)
                 .title("퀴즈")
                 .description("설명")
                 .build();
@@ -106,28 +119,29 @@ class QuizServiceTest {
     @DisplayName("create 성공: 본인 교안에 퀴즈 세트 생성")
     void create_success() {
         User prof = createUser(1L, Role.PROF);
-        Lesson lesson = createLesson(3L, prof);
-        QuizCreateRequestDto request = new QuizCreateRequestDto("퀴즈", "설명", 3L);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+        QuizCreateRequestDto request = new QuizCreateRequestDto("퀴즈", "설명", 3L, null);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(prof));
-        when(lessonRepository.findById(3L)).thenReturn(Optional.of(lesson));
+        when(materialRepository.findById(3L)).thenReturn(Optional.of(material));
         when(quizRepository.save(any(Quiz.class))).thenAnswer(inv -> {
             Quiz q = inv.getArgument(0);
             ReflectionTestUtils.setField(q, "id", 10L);
             return q;
         });
 
-        QuizResponseDto result = quizService.create(request, 1L);
+        QuizDetailResponseDto result = quizService.create(request, 1L);
 
         assertThat(result.title()).isEqualTo("퀴즈");
         assertThat(result.professorId()).isEqualTo(1L);
-        assertThat(result.lessonId()).isEqualTo(3L);
+        assertThat(result.materialId()).isEqualTo(3L);
     }
 
     @Test
     @DisplayName("create 실패: 사용자가 없으면 USER_NOT_FOUND")
     void create_userNotFound() {
-        QuizCreateRequestDto request = new QuizCreateRequestDto("퀴즈", "설명", 3L);
+        QuizCreateRequestDto request = new QuizCreateRequestDto("퀴즈", "설명", 3L, null);
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> quizService.create(request, 1L))
@@ -137,29 +151,30 @@ class QuizServiceTest {
     }
 
     @Test
-    @DisplayName("create 실패: 교안이 없으면 LESSON_NOT_FOUND")
-    void create_lessonNotFound() {
+    @DisplayName("create 실패: 교안이 없으면 LESSON_MATERIAL_NOT_FOUND")
+    void create_materialNotFound() {
         User prof = createUser(1L, Role.PROF);
-        QuizCreateRequestDto request = new QuizCreateRequestDto("퀴즈", "설명", 99L);
+        QuizCreateRequestDto request = new QuizCreateRequestDto("퀴즈", "설명", 99L, null);
         when(userRepository.findById(1L)).thenReturn(Optional.of(prof));
-        when(lessonRepository.findById(99L)).thenReturn(Optional.empty());
+        when(materialRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> quizService.create(request, 1L))
                 .isInstanceOf(CustomException.class)
                 .extracting(e -> ((CustomException) e).getErrorCode())
-                .isEqualTo(ErrorCode.LESSON_NOT_FOUND);
+                .isEqualTo(ErrorCode.LESSON_MATERIAL_NOT_FOUND);
     }
 
     @Test
     @DisplayName("create 실패: 본인 소유 아닌 교안이면 QUIZ_LESSON_NOT_OWNED")
-    void create_lessonNotOwned() {
+    void create_materialNotOwned() {
         User prof = createUser(1L, Role.PROF);
         User otherProf = createUser(2L, Role.PROF);
-        Lesson othersLesson = createLesson(3L, otherProf);
-        QuizCreateRequestDto request = new QuizCreateRequestDto("퀴즈", "설명", 3L);
+        Lesson lesson = createLesson(5L, otherProf);
+        LessonMaterial othersMaterial = createMaterial(3L, lesson, otherProf);
+        QuizCreateRequestDto request = new QuizCreateRequestDto("퀴즈", "설명", 3L, null);
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(prof));
-        when(lessonRepository.findById(3L)).thenReturn(Optional.of(othersLesson));
+        when(materialRepository.findById(3L)).thenReturn(Optional.of(othersMaterial));
 
         assertThatThrownBy(() -> quizService.create(request, 1L))
                 .isInstanceOf(CustomException.class)
@@ -183,8 +198,9 @@ class QuizServiceTest {
     @DisplayName("isOwner: 출제 교수 ID와 일치하면 true")
     void isOwner_true() {
         User prof = createUser(1L, Role.PROF);
-        Lesson lesson = createLesson(3L, prof);
-        Quiz quiz = createQuiz(10L, prof, lesson);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+        Quiz quiz = createQuiz(10L, prof, material);
         when(quizRepository.findById(10L)).thenReturn(Optional.of(quiz));
 
         assertThat(quizService.isOwner(10L, 1L)).isTrue();
@@ -194,8 +210,9 @@ class QuizServiceTest {
     @DisplayName("isOwner: 출제 교수 ID와 다르면 false")
     void isOwner_notOwner() {
         User prof = createUser(1L, Role.PROF);
-        Lesson lesson = createLesson(3L, prof);
-        Quiz quiz = createQuiz(10L, prof, lesson);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+        Quiz quiz = createQuiz(10L, prof, material);
         when(quizRepository.findById(10L)).thenReturn(Optional.of(quiz));
 
         assertThat(quizService.isOwner(10L, 999L)).isFalse();
@@ -210,15 +227,16 @@ class QuizServiceTest {
     }
 
     @Test
-    @DisplayName("getOne 성공: USER가 APPROVED 받은 교안의 퀴즈 조회")
+    @DisplayName("getOne 성공: USER가 APPROVED 받은 강의의 퀴즈 조회")
     void getOne_userApproved() {
         User prof = createUser(1L, Role.PROF);
-        Lesson lesson = createLesson(3L, prof);
-        Quiz quiz = createQuiz(10L, prof, lesson);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+        Quiz quiz = createQuiz(10L, prof, material);
 
         when(quizRepository.findById(10L)).thenReturn(Optional.of(quiz));
         when(enrollmentRepository.existsByLessonIdAndStudentIdAndStatus(
-                3L, 2L, EnrollmentStatus.APPROVED)).thenReturn(true);
+                5L, 2L, EnrollmentStatus.APPROVED)).thenReturn(true);
 
         assertThat(quizService.getOne(10L, 2L, Role.USER).id()).isEqualTo(10L);
     }
@@ -227,12 +245,13 @@ class QuizServiceTest {
     @DisplayName("getOne 실패: 미승인 USER는 ENROLLMENT_NOT_APPROVED")
     void getOne_userNotApproved() {
         User prof = createUser(1L, Role.PROF);
-        Lesson lesson = createLesson(3L, prof);
-        Quiz quiz = createQuiz(10L, prof, lesson);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+        Quiz quiz = createQuiz(10L, prof, material);
 
         when(quizRepository.findById(10L)).thenReturn(Optional.of(quiz));
         when(enrollmentRepository.existsByLessonIdAndStudentIdAndStatus(
-                3L, 2L, EnrollmentStatus.APPROVED)).thenReturn(false);
+                5L, 2L, EnrollmentStatus.APPROVED)).thenReturn(false);
 
         assertThatThrownBy(() -> quizService.getOne(10L, 2L, Role.USER))
                 .isInstanceOf(CustomException.class)
@@ -244,8 +263,9 @@ class QuizServiceTest {
     @DisplayName("getOne 성공: PROF/ADMIN은 enrollment 검사 없이 조회")
     void getOne_profIgnoresEnrollment() {
         User prof = createUser(1L, Role.PROF);
-        Lesson lesson = createLesson(3L, prof);
-        Quiz quiz = createQuiz(10L, prof, lesson);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+        Quiz quiz = createQuiz(10L, prof, material);
         when(quizRepository.findById(10L)).thenReturn(Optional.of(quiz));
 
         assertThat(quizService.getOne(10L, 1L, Role.PROF).id()).isEqualTo(10L);
@@ -256,15 +276,16 @@ class QuizServiceTest {
     void submit_notApproved() {
         User prof = createUser(1L, Role.PROF);
         User student = createUser(2L, Role.USER);
-        Lesson lesson = createLesson(3L, prof);
-        Quiz quiz = createQuiz(10L, prof, lesson);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+        Quiz quiz = createQuiz(10L, prof, material);
         QuizSubmitRequestDto request = new QuizSubmitRequestDto(
                 List.of(new QuizSubmitRequestDto.AnswerDto(100L, "답")));
 
         when(quizRepository.findById(10L)).thenReturn(Optional.of(quiz));
         when(userRepository.findById(2L)).thenReturn(Optional.of(student));
         when(enrollmentRepository.existsByLessonIdAndStudentIdAndStatus(
-                3L, 2L, EnrollmentStatus.APPROVED)).thenReturn(false);
+                5L, 2L, EnrollmentStatus.APPROVED)).thenReturn(false);
 
         assertThatThrownBy(() -> quizService.submit(10L, request, 2L))
                 .isInstanceOf(CustomException.class)
@@ -277,16 +298,16 @@ class QuizServiceTest {
     void submit_alreadySubmitted() {
         User prof = createUser(1L, Role.PROF);
         User student = createUser(2L, Role.USER);
-        Lesson lesson = createLesson(3L, prof);
-        Quiz quiz = createQuiz(10L, prof, lesson);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+        Quiz quiz = createQuiz(10L, prof, material);
         QuizSubmitRequestDto request = new QuizSubmitRequestDto(
-                List.of(new QuizSubmitRequestDto.AnswerDto(100L, "답"))
-        );
+                List.of(new QuizSubmitRequestDto.AnswerDto(100L, "답")));
 
         when(quizRepository.findById(10L)).thenReturn(Optional.of(quiz));
         when(userRepository.findById(2L)).thenReturn(Optional.of(student));
         when(enrollmentRepository.existsByLessonIdAndStudentIdAndStatus(
-                3L, 2L, EnrollmentStatus.APPROVED)).thenReturn(true);
+                5L, 2L, EnrollmentStatus.APPROVED)).thenReturn(true);
         when(submissionRepository.existsByQuizAndStudent(quiz, student)).thenReturn(true);
 
         assertThatThrownBy(() -> quizService.submit(10L, request, 2L))
@@ -300,8 +321,9 @@ class QuizServiceTest {
     void submit_success() {
         User prof = createUser(1L, Role.PROF);
         User student = createUser(2L, Role.USER);
-        Lesson lesson = createLesson(3L, prof);
-        Quiz quiz = createQuiz(10L, prof, lesson);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+        Quiz quiz = createQuiz(10L, prof, material);
         QuizQuestion q1 = createQuestion(100L, quiz, "FCFS", 5);
         QuizQuestion q2 = createQuestion(101L, quiz, "SJF", 5);
 
@@ -313,7 +335,7 @@ class QuizServiceTest {
         when(quizRepository.findById(10L)).thenReturn(Optional.of(quiz));
         when(userRepository.findById(2L)).thenReturn(Optional.of(student));
         when(enrollmentRepository.existsByLessonIdAndStudentIdAndStatus(
-                3L, 2L, EnrollmentStatus.APPROVED)).thenReturn(true);
+                5L, 2L, EnrollmentStatus.APPROVED)).thenReturn(true);
         when(submissionRepository.existsByQuizAndStudent(quiz, student)).thenReturn(false);
         when(questionRepository.findByQuizOrderById(quiz)).thenReturn(List.of(q1, q2));
         when(submissionRepository.save(any(QuizSubmission.class))).thenAnswer(inv -> {
@@ -330,16 +352,17 @@ class QuizServiceTest {
     }
 
     @Test
-    @DisplayName("getAll(USER, lessonId=null): APPROVED 받은 교안의 퀴즈만 반환")
+    @DisplayName("getAll(USER, materialId=null): APPROVED 강의의 교안 퀴즈만 반환")
     void getAll_userScopedToApprovedLessons() {
         Pageable pageable = PageRequest.of(0, 10);
         User prof = createUser(1L, Role.PROF);
-        Lesson lesson3 = createLesson(3L, prof);
-        Quiz quiz = createQuiz(10L, prof, lesson3);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+        Quiz quiz = createQuiz(10L, prof, material);
 
         when(enrollmentRepository.findLessonIdsByStudentIdAndStatus(2L, EnrollmentStatus.APPROVED))
-                .thenReturn(List.of(3L));
-        when(quizRepository.findByLesson_IdIn(List.of(3L), pageable))
+                .thenReturn(List.of(5L));
+        when(quizRepository.findByMaterial_Lesson_IdIn(List.of(5L), pageable))
                 .thenReturn(new PageImpl<>(List.of(quiz), pageable, 1));
 
         Page<QuizResponseDto> result = quizService.getAll(2L, Role.USER, null, pageable);
@@ -350,7 +373,7 @@ class QuizServiceTest {
     }
 
     @Test
-    @DisplayName("getAll(USER, lessonId=null): APPROVED 교안 없으면 빈 페이지")
+    @DisplayName("getAll(USER, materialId=null): APPROVED 강의 없으면 빈 페이지")
     void getAll_userNoApprovedReturnsEmpty() {
         Pageable pageable = PageRequest.of(0, 10);
         when(enrollmentRepository.findLessonIdsByStudentIdAndStatus(2L, EnrollmentStatus.APPROVED))
@@ -360,48 +383,56 @@ class QuizServiceTest {
 
         assertThat(result.getContent()).isEmpty();
         assertThat(result.getTotalElements()).isZero();
-        verify(quizRepository, never()).findByLesson_IdIn(any(), any());
+        verify(quizRepository, never()).findByMaterial_Lesson_IdIn(any(), any());
     }
 
     @Test
-    @DisplayName("getAll(USER, lessonId=APPROVED): 해당 교안 퀴즈 반환")
-    void getAll_userWithApprovedLessonId() {
+    @DisplayName("getAll(USER, materialId=승인된 교안): 해당 교안 퀴즈 반환")
+    void getAll_userWithApprovedMaterialId() {
         Pageable pageable = PageRequest.of(0, 10);
         User prof = createUser(1L, Role.PROF);
-        Lesson lesson3 = createLesson(3L, prof);
-        Quiz quiz = createQuiz(10L, prof, lesson3);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+        Quiz quiz = createQuiz(10L, prof, material);
 
+        when(materialRepository.findById(3L)).thenReturn(Optional.of(material));
         when(enrollmentRepository.existsByLessonIdAndStudentIdAndStatus(
-                3L, 2L, EnrollmentStatus.APPROVED)).thenReturn(true);
-        when(quizRepository.findByLesson_Id(3L, pageable))
+                5L, 2L, EnrollmentStatus.APPROVED)).thenReturn(true);
+        when(quizRepository.findByMaterial_Id(3L, pageable))
                 .thenReturn(new PageImpl<>(List.of(quiz), pageable, 1));
 
         Page<QuizResponseDto> result = quizService.getAll(2L, Role.USER, 3L, pageable);
 
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).lessonId()).isEqualTo(3L);
+        assertThat(result.getContent().get(0).materialId()).isEqualTo(3L);
     }
 
     @Test
-    @DisplayName("getAll(USER, lessonId=미승인): 빈 페이지 반환")
-    void getAll_userWithUnapprovedLessonIdReturnsEmpty() {
+    @DisplayName("getAll(USER, materialId=미승인 교안): 빈 페이지 반환")
+    void getAll_userWithUnapprovedMaterialIdReturnsEmpty() {
         Pageable pageable = PageRequest.of(0, 10);
+        User prof = createUser(1L, Role.PROF);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+
+        when(materialRepository.findById(3L)).thenReturn(Optional.of(material));
         when(enrollmentRepository.existsByLessonIdAndStudentIdAndStatus(
-                3L, 2L, EnrollmentStatus.APPROVED)).thenReturn(false);
+                5L, 2L, EnrollmentStatus.APPROVED)).thenReturn(false);
 
         Page<QuizResponseDto> result = quizService.getAll(2L, Role.USER, 3L, pageable);
 
         assertThat(result.getContent()).isEmpty();
-        verify(quizRepository, never()).findByLesson_Id(any(), any());
+        verify(quizRepository, never()).findByMaterial_Id(any(), any());
     }
 
     @Test
-    @DisplayName("getAll(PROF, lessonId=null): 본인 출제 퀴즈 전체 반환")
+    @DisplayName("getAll(PROF, materialId=null): 본인 출제 퀴즈 전체 반환")
     void getAll_profAllOwn() {
         Pageable pageable = PageRequest.of(0, 10);
         User prof = createUser(1L, Role.PROF);
-        Lesson lesson = createLesson(3L, prof);
-        Quiz quiz = createQuiz(10L, prof, lesson);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+        Quiz quiz = createQuiz(10L, prof, material);
 
         when(quizRepository.findByProfessor_Id(1L, pageable))
                 .thenReturn(new PageImpl<>(List.of(quiz), pageable, 1));
@@ -413,24 +444,25 @@ class QuizServiceTest {
     }
 
     @Test
-    @DisplayName("getAll(PROF, lessonId): 본인+교안 필터링")
-    void getAll_profFilteredByLesson() {
+    @DisplayName("getAll(PROF, materialId): 본인+교안 필터링")
+    void getAll_profFilteredByMaterial() {
         Pageable pageable = PageRequest.of(0, 10);
         User prof = createUser(1L, Role.PROF);
-        Lesson lesson = createLesson(3L, prof);
-        Quiz quiz = createQuiz(10L, prof, lesson);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+        Quiz quiz = createQuiz(10L, prof, material);
 
-        when(quizRepository.findByProfessor_IdAndLesson_Id(1L, 3L, pageable))
+        when(quizRepository.findByProfessor_IdAndMaterial_Id(1L, 3L, pageable))
                 .thenReturn(new PageImpl<>(List.of(quiz), pageable, 1));
 
         Page<QuizResponseDto> result = quizService.getAll(1L, Role.PROF, 3L, pageable);
 
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).lessonId()).isEqualTo(3L);
+        assertThat(result.getContent().get(0).materialId()).isEqualTo(3L);
     }
 
     @Test
-    @DisplayName("getAll(ADMIN, lessonId=null): 전체 퀴즈 반환")
+    @DisplayName("getAll(ADMIN, materialId=null): 전체 퀴즈 반환")
     void getAll_adminAll() {
         Pageable pageable = PageRequest.of(0, 10);
         when(quizRepository.findAll(pageable))
@@ -442,46 +474,14 @@ class QuizServiceTest {
     }
 
     @Test
-    @DisplayName("getAll(ADMIN, lessonId): 해당 교안 전체 퀴즈 반환")
-    void getAll_adminFilteredByLesson() {
+    @DisplayName("getAll(ADMIN, materialId): 해당 교안 전체 퀴즈 반환")
+    void getAll_adminFilteredByMaterial() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(quizRepository.findByLesson_Id(3L, pageable))
+        when(quizRepository.findByMaterial_Id(3L, pageable))
                 .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
         Page<QuizResponseDto> result = quizService.getAll(99L, Role.ADMIN, 3L, pageable);
 
         assertThat(result.getContent()).isEmpty();
-    }
-
-    @Test
-    @DisplayName("submit: 알 수 없는 questionId는 무시")
-    void submit_ignoresUnknownQuestion() {
-        User prof = createUser(1L, Role.PROF);
-        User student = createUser(2L, Role.USER);
-        Lesson lesson = createLesson(3L, prof);
-        Quiz quiz = createQuiz(10L, prof, lesson);
-        QuizQuestion q1 = createQuestion(100L, quiz, "FCFS", 5);
-
-        QuizSubmitRequestDto request = new QuizSubmitRequestDto(List.of(
-                new QuizSubmitRequestDto.AnswerDto(100L, "FCFS"),
-                new QuizSubmitRequestDto.AnswerDto(999L, "unknown")
-        ));
-
-        when(quizRepository.findById(10L)).thenReturn(Optional.of(quiz));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(student));
-        when(enrollmentRepository.existsByLessonIdAndStudentIdAndStatus(
-                3L, 2L, EnrollmentStatus.APPROVED)).thenReturn(true);
-        when(submissionRepository.existsByQuizAndStudent(quiz, student)).thenReturn(false);
-        when(questionRepository.findByQuizOrderById(quiz)).thenReturn(List.of(q1));
-        when(submissionRepository.save(any(QuizSubmission.class))).thenAnswer(inv -> {
-            QuizSubmission s = inv.getArgument(0);
-            ReflectionTestUtils.setField(s, "id", 1000L);
-            return s;
-        });
-
-        QuizSubmissionResponseDto result = quizService.submit(10L, request, 2L);
-
-        assertThat(result.totalScore()).isEqualTo(5);
-        assertThat(result.totalQuestions()).isEqualTo(1);
     }
 }

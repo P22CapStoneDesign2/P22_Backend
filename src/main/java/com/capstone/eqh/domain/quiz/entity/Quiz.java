@@ -1,6 +1,6 @@
 package com.capstone.eqh.domain.quiz.entity;
 
-import com.capstone.eqh.domain.lesson.entity.Lesson;
+import com.capstone.eqh.domain.lesson.entity.LessonMaterial;
 import com.capstone.eqh.domain.user.entity.User;
 import com.capstone.eqh.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
@@ -36,7 +36,7 @@ public class Quiz extends BaseTimeEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "lesson_id", nullable = false)
-    private Lesson lesson;
+    private LessonMaterial material;
 
     @Column(nullable = false, length = 200)
     private String title;

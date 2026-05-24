@@ -29,12 +29,19 @@ public enum ErrorCode {
     // ── 403 Forbidden ─────────────────────────────────────────────────
     FORBIDDEN(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN, "이메일 인증이 완료되지 않았습니다."),
-    ENROLLMENT_NOT_APPROVED(HttpStatus.FORBIDDEN, "수강 승인되지 않은 교안입니다."),
+    ENROLLMENT_NOT_APPROVED(HttpStatus.FORBIDDEN, "수강 승인되지 않은 강의입니다."),
     QUIZ_LESSON_NOT_OWNED(HttpStatus.FORBIDDEN, "본인 소유의 교안에만 퀴즈를 생성할 수 있습니다."),
+<<<<<<< Updated upstream
+=======
+    LESSON_MATERIAL_ACCESS_DENIED(HttpStatus.FORBIDDEN, "수강 중인 강의의 교안만 조회할 수 있습니다."),
+    PROF_NOT_APPROVED(HttpStatus.FORBIDDEN, "교수 계정 승인 대기 중입니다."),
+>>>>>>> Stashed changes
 
     // ── 404 Not Found ─────────────────────────────────────────────────
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."),
-    LESSON_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 교안입니다."),
+    LESSON_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 강의입니다."),
+    LESSON_MATERIAL_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 교안입니다."),
+    LESSON_MATERIAL_NOT_IN_LESSON(HttpStatus.NOT_FOUND, "해당 강의에 속한 교안이 아닙니다."),
     QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 퀴즈입니다."),
     QUIZ_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 문제입니다."),
     ENROLLMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "수강 신청을 찾을 수 없습니다."),
@@ -45,7 +52,7 @@ public enum ErrorCode {
     EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
     NICKNAME_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다."),
     QUIZ_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "이미 제출한 퀴즈입니다."),
-    ENROLLMENT_DUPLICATE(HttpStatus.CONFLICT, "이미 신청한 교안입니다."),
+    ENROLLMENT_DUPLICATE(HttpStatus.CONFLICT, "이미 신청한 강의입니다."),
     OAUTH2_EMAIL_ALREADY_LOCAL(HttpStatus.CONFLICT, "이미 일반 계정으로 가입된 이메일입니다."),
     SOCIAL_ACCOUNT_CONFLICT(HttpStatus.CONFLICT, "소셜 로그인으로 가입된 계정입니다."),
 

@@ -8,6 +8,12 @@ public record QuizCreateRequestDto(
         String title,
         String description,
         @NotNull(message = "퀴즈가 속할 교안 ID를 지정해주세요.")
+<<<<<<< Updated upstream
         Long lessonId
+=======
+        Long materialId,
+        @Valid
+        List<QuizQuestionCreateRequestDto> questions
+>>>>>>> Stashed changes
 ) {
 }

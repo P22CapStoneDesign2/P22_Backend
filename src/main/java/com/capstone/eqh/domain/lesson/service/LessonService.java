@@ -40,30 +40,28 @@ public class LessonService {
     }
 
     public LessonResponseDto getOne(Long id) {
-        return LessonResponseDto.from(findLessonById(id));
+        return LessonResponseDto.from(findById(id));
     }
 
     @Transactional
     public LessonResponseDto update(Long id, LessonUpdateRequestDto request) {
-        Lesson lesson = findLessonById(id);
+        Lesson lesson = findById(id);
         lesson.update(request.title(), request.description());
         return LessonResponseDto.from(lesson);
     }
 
     @Transactional
     public void delete(Long id) {
-        Lesson lesson = findLessonById(id);
-        lessonRepository.delete(lesson);
+        lessonRepository.delete(findById(id));
     }
 
     public boolean isOwner(Long lessonId, Long userId) {
         return lessonRepository.findById(lessonId)
-                .map(lesson -> lesson.getCreatedBy() != null &&
-                        lesson.getCreatedBy().getId().equals(userId))
+                .map(l -> l.getCreatedBy() != null && l.getCreatedBy().getId().equals(userId))
                 .orElse(false);
     }
 
-    private Lesson findLessonById(Long id) {
+    public Lesson findById(Long id) {
         return lessonRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
     }

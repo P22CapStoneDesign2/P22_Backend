@@ -49,11 +49,11 @@ public class QuizController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<QuizResponseDto>>> getAll(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam(required = false) Long lessonId,
+            @RequestParam(required = false) Long materialId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         Role role = userDetails.getUser().getRole();
         return ResponseEntity.ok(ApiResponse.success(200, "퀴즈 목록 조회 성공",
-                quizService.getAll(userDetails.getUserId(), role, lessonId, pageable)));
+                quizService.getAll(userDetails.getUserId(), role, materialId, pageable)));
     }
 
     @GetMapping("/{quizId}")

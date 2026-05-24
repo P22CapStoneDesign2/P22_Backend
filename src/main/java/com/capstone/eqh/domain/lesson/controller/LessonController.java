@@ -30,34 +30,50 @@ public class LessonController {
     public ResponseEntity<ApiResponse<LessonResponseDto>> create(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody LessonCreateRequestDto request) {
-        LessonResponseDto response = lessonService.create(request, userDetails.getUserId());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(201, "교안 생성 성공", response));
+                .body(ApiResponse.success(201, "강의 생성 성공",
+                        lessonService.create(request, userDetails.getUserId())));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<LessonResponseDto>>> getAll(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(ApiResponse.success(200, "교안 목록 조회 성공", lessonService.getAll(pageable)));
+        return ResponseEntity.ok(ApiResponse.success(200, "강의 목록 조회 성공",
+                lessonService.getAll(pageable)));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<LessonResponseDto>> getOne(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success(200, "교안 조회 성공", lessonService.getOne(id)));
+    @GetMapping("/{lessonId}")
+    public ResponseEntity<ApiResponse<LessonResponseDto>> getOne(@PathVariable Long lessonId) {
+        return ResponseEntity.ok(ApiResponse.success(200, "강의 조회 성공",
+                lessonService.getOne(lessonId)));
     }
 
+<<<<<<< Updated upstream
     @PutMapping("/{id}")
     @PreAuthorize("(hasRole('PROF') and @lessonService.isOwner(#id, principal.userId)) or hasRole('ADMIN')")
+=======
+    @PutMapping("/{lessonId}")
+    @PreAuthorize("(hasRole('PROF') and principal.active and @lessonService.isOwner(#lessonId, principal.userId)) or hasRole('ADMIN')")
+>>>>>>> Stashed changes
     public ResponseEntity<ApiResponse<LessonResponseDto>> update(
-            @PathVariable Long id,
+            @PathVariable Long lessonId,
             @Valid @RequestBody LessonUpdateRequestDto request) {
-        return ResponseEntity.ok(ApiResponse.success(200, "교안 수정 성공", lessonService.update(id, request)));
+        return ResponseEntity.ok(ApiResponse.success(200, "강의 수정 성공",
+                lessonService.update(lessonId, request)));
     }
 
+<<<<<<< Updated upstream
     @DeleteMapping("/{id}")
     @PreAuthorize("(hasRole('PROF') and @lessonService.isOwner(#id, principal.userId)) or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         lessonService.delete(id);
         return ResponseEntity.ok(ApiResponse.success("교안 삭제 성공"));
+=======
+    @DeleteMapping("/{lessonId}")
+    @PreAuthorize("(hasRole('PROF') and principal.active and @lessonService.isOwner(#lessonId, principal.userId)) or hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long lessonId) {
+        lessonService.delete(lessonId);
+        return ResponseEntity.ok(ApiResponse.success("강의 삭제 성공"));
+>>>>>>> Stashed changes
     }
 }
