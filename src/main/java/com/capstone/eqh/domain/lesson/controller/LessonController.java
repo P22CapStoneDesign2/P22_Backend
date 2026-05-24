@@ -26,7 +26,7 @@ public class LessonController {
     private final LessonService lessonService;
 
     @PostMapping
-    @PreAuthorize("hasRole('PROF')")
+    @PreAuthorize("hasRole('PROF') and principal.active")
     public ResponseEntity<ApiResponse<LessonResponseDto>> create(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody LessonCreateRequestDto request) {
@@ -48,13 +48,8 @@ public class LessonController {
                 lessonService.getOne(lessonId)));
     }
 
-<<<<<<< Updated upstream
-    @PutMapping("/{id}")
-    @PreAuthorize("(hasRole('PROF') and @lessonService.isOwner(#id, principal.userId)) or hasRole('ADMIN')")
-=======
     @PutMapping("/{lessonId}")
     @PreAuthorize("(hasRole('PROF') and principal.active and @lessonService.isOwner(#lessonId, principal.userId)) or hasRole('ADMIN')")
->>>>>>> Stashed changes
     public ResponseEntity<ApiResponse<LessonResponseDto>> update(
             @PathVariable Long lessonId,
             @Valid @RequestBody LessonUpdateRequestDto request) {
@@ -62,18 +57,10 @@ public class LessonController {
                 lessonService.update(lessonId, request)));
     }
 
-<<<<<<< Updated upstream
-    @DeleteMapping("/{id}")
-    @PreAuthorize("(hasRole('PROF') and @lessonService.isOwner(#id, principal.userId)) or hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
-        lessonService.delete(id);
-        return ResponseEntity.ok(ApiResponse.success("교안 삭제 성공"));
-=======
     @DeleteMapping("/{lessonId}")
     @PreAuthorize("(hasRole('PROF') and principal.active and @lessonService.isOwner(#lessonId, principal.userId)) or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long lessonId) {
         lessonService.delete(lessonId);
         return ResponseEntity.ok(ApiResponse.success("강의 삭제 성공"));
->>>>>>> Stashed changes
     }
 }

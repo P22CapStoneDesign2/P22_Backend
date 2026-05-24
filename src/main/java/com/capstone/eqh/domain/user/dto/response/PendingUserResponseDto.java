@@ -5,24 +5,20 @@ import com.capstone.eqh.domain.user.enums.UserStatus;
 
 import java.time.LocalDateTime;
 
-public record UserResponseDto(
+public record PendingUserResponseDto(
         Long id,
         String username,
-        String nickname,
         String email,
-        String provider,
-        String role,
+        String nickname,
         UserStatus status,
         LocalDateTime createdAt
 ) {
-    public static UserResponseDto from(User user) {
-        return new UserResponseDto(
+    public static PendingUserResponseDto from(User user) {
+        return new PendingUserResponseDto(
                 user.getId(),
                 user.getUsername(),
-                user.getNickname(),
                 user.getEmail(),
-                user.getProvider().name(),
-                user.getRole().name(),
+                user.getNickname(),
                 user.getStatus(),
                 user.getCreatedAt()
         );

@@ -2,6 +2,7 @@ package com.capstone.eqh.domain.user.service;
 
 import com.capstone.eqh.domain.user.dto.request.LoginRequestDto;
 import com.capstone.eqh.domain.user.dto.request.LogoutRequestDto;
+import com.capstone.eqh.domain.user.dto.request.ProfSignupRequestDto;
 import com.capstone.eqh.domain.user.dto.request.ReissueRequestDto;
 import com.capstone.eqh.domain.user.dto.request.UserSocialSignupRequestDto;
 import com.capstone.eqh.domain.user.dto.response.AuthResponseDto;
@@ -82,6 +83,17 @@ public class UserAuthService {
         stored.updateToken(newRefreshToken, toLocalDateTime(jwtProvider.getExpiration(newRefreshToken)));
 
         return new AuthResponseDto(newAccessToken, newRefreshToken);
+    }
+
+    @Transactional
+    public AuthResponseDto profSignup(ProfSignupRequestDto request) {
+        User user = userSignupService.profSignup(request);
+
+        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole().name());
+        String refreshToken = jwtProvider.generateRefreshToken(user.getId());
+        saveOrUpdateRefreshToken(user.getId(), refreshToken);
+
+        return new AuthResponseDto(accessToken, refreshToken, user.getStatus());
     }
 
     @Transactional

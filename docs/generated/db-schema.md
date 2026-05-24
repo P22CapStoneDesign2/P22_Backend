@@ -2,11 +2,7 @@
 
 > 이 파일은 엔티티 클래스 기반으로 유지됩니다.
 > 엔티티 변경 시 이 파일도 함께 업데이트해야 합니다.
-<<<<<<< Updated upstream
-> 마지막 갱신: 2026-05-21
-=======
 > 마지막 갱신: 2026-05-25
->>>>>>> Stashed changes
 
 ---
 
@@ -24,10 +20,13 @@
 | `provider` | VARCHAR(10) | NOT NULL | `LOCAL` \| `KAKAO` |
 | `provider_id` | VARCHAR | NULL | 소셜 로그인 제공자 식별자 (Kakao OIDC `sub`) |
 | `role` | VARCHAR(10) | NOT NULL | `PROF` \| `USER` \| `ADMIN` |
+| `status` | VARCHAR(10) | NOT NULL, DEFAULT `'ACTIVE'` | `PENDING` \| `ACTIVE` \| `REJECTED` — PROF 승인 상태 |
 | `deleted` | BOOLEAN | NOT NULL, DEFAULT false | Soft Delete 여부 |
 | `deleted_at` | TIMESTAMP | NULL | 탈퇴 일시 |
 | `created_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
 | `updated_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
+
+> `UserStatus` enum 은 `domain/user/enums/UserStatus.java` 에 정의. PROF 가입 시 `PENDING`으로 저장되고 ADMIN 승인 후 `ACTIVE`, 거절 시 `REJECTED` 로 변경된다. USER·ADMIN은 항상 `ACTIVE`. 기존 행은 컬럼 추가 시 PostgreSQL DEFAULT 제약으로 `ACTIVE` 백필.
 
 ---
 
