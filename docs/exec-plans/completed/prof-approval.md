@@ -1,7 +1,8 @@
-# [Active] 교수 회원가입 승인 워크플로
+# [Completed] 교수 회원가입 승인 워크플로
 
 - **시작일**: 2026-05-21
-- **브랜치**: feat/lesson_sik (Day 2) — Day 1과 같은 브랜치에서 이어 진행. 분리 필요 시 후속 결정.
+- **완료일**: 2026-05-24
+- **브랜치**: feature/login_minsik → dev 머지 → origin/dev push
 
 ## 목표
 
@@ -65,21 +66,6 @@ PROF 회원가입을 즉시 활성화하지 않고 ADMIN 수락 후 활성화한
 - `ALTER TABLE users ADD COLUMN status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE'`
 - 신규 PROF 가입만 PENDING으로 저장
 
-## 보안 적용 방식
-
-- `CustomUserDetails`에 `isActive()` getter 추가 — `user.getStatus() == UserStatus.ACTIVE` 반환
-- `@PreAuthorize` 표현식에 조건 추가:
-  ```
-  hasRole('PROF') and principal.active
-  ```
-- 영향받는 endpoint:
-  - `POST /api/lessons`, `PUT/DELETE /api/lessons/{id}` (PROF/PROF본인)
-  - `POST /api/quiz`, `PUT/DELETE /api/quiz/{quizId}` (PROF/PROF본인)
-  - 퀴즈 문제 CRUD 전반
-  - Day 1에 추가된 enrollment approve/reject (PROF본인)
-- ADMIN은 status 영향 없음 (ADMIN은 항상 ACTIVE 가정)
-- USER 역할 endpoint(`/api/lessons/{id}/enrollments` POST 등)는 status 영향 없음 (USER는 PENDING이 없음)
-
 ## 의사결정 로그
 
 ### 2026-05-21
@@ -89,41 +75,13 @@ PROF 회원가입을 즉시 활성화하지 않고 ADMIN 수락 후 활성화한
 - `principal.active`를 `CustomUserDetails`에 추가하는 것은 보안 객체 책임 안 (이미 User 정보를 보유). domain 계층 의존 규칙 위반 아님.
 - ArchUnit 규칙 변경 없음 (`UserStatus` enum은 `domain/user/enums/`에 위치).
 
-## 테스트 케이스
+### 2026-05-24
+- `JpaAuditingConfig.java`가 로컬에만 있고 git 미추적 상태였음. 해당 파일 없이 dev 브랜치를 실행하면 `BaseTimeEntity.createdAt`/`updatedAt` = null → NOT NULL 위반 → 500. feature/login_minsik → dev 머지로 함께 해소.
+- 프론트 담당자가 보고한 POST /api/lessons, POST /api/quiz 500 오류의 실제 원인은 이 JPA 감사 설정 누락이었음 (content null 오류로 오인).
+- 프론트 403 메시지 미표시는 프론트엔드에서 `error.response.data.message` 미사용으로 인한 것 — 백엔드 변경 없이 프론트 수정으로 해결.
 
-### UserSignupServiceTest (확장)
+## 완료 상태
 
-| # | 메서드 | 검증 내용 | 기대 결과 |
-|---|--------|----------|----------|
-| 1 | `profSignup_savesAsPending` | PROF 가입 | status=PENDING으로 저장, 토큰 발급 |
-| 2 | `profSignup_rejectedEmail` | REJECTED 이메일 재가입 | `EMAIL_REJECTED` 409 |
-| 3 | `userSignup_savesAsActive` | 카카오 USER 가입 | status=ACTIVE |
-
-### AdminUserServiceTest (신규)
-
-| # | 메서드 | 검증 내용 | 기대 결과 |
-|---|--------|----------|----------|
-| 1 | `approve_pendingProf` | PENDING PROF approve | ACTIVE로 변경 |
-| 2 | `reject_pendingProf` | PENDING PROF reject | REJECTED로 변경 |
-| 3 | `changeStatus_rejectedToActive` | REJECTED → ACTIVE 변경 | 정상 변경 |
-| 4 | `listPending_returnsPendingProfs` | pending 목록 조회 | PENDING PROF만 반환 |
-
-### 통합 테스트 (PENDING 차단)
-
-| # | 시나리오 | 기대 결과 |
-|---|----------|----------|
-| 1 | PENDING PROF의 `POST /api/lessons` | 403 `PROF_NOT_APPROVED` |
-| 2 | APPROVED 후 동일 호출 | 201 |
-| 3 | PENDING PROF의 `POST /api/quiz` | 403 |
-| 4 | PENDING PROF의 enrollment approve | 403 |
-
-## 작업 순서
-
-1. 본 계획 문서 사용자 승인
-2. `docs/API.md` 갱신 (signup/me 응답 변경, admin endpoint 추가)
-3. `UserStatus` enum, `User.status` 컬럼 추가, 백필
-4. 회원가입 흐름 변경 + REJECTED 재가입 차단
-5. `CustomUserDetails.isActive` 추가, `@PreAuthorize` 갱신
-6. AdminUserController/Service 추가
-7. 테스트 추가, build 통과
-8. 사용자 검토 → 머지 → `completed/`로 이동
+- `feature/login_minsik` → `dev` 머지 완료 (2026-05-24)
+- `origin/dev` push 완료
+- `./gradlew build` 전체 통과
