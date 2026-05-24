@@ -2,6 +2,7 @@ package com.capstone.eqh.domain.user.entity;
 
 import com.capstone.eqh.domain.user.enums.AuthProvider;
 import com.capstone.eqh.domain.user.enums.Role;
+import com.capstone.eqh.domain.user.enums.UserStatus;
 import com.capstone.eqh.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -44,6 +45,10 @@ public class User extends BaseTimeEntity {
     @Column(nullable = false, length = 10)
     private Role role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10, columnDefinition = "VARCHAR(10) NOT NULL DEFAULT 'ACTIVE'")
+    private UserStatus status = UserStatus.ACTIVE;
+
     @Column(nullable = false)
     private boolean deleted = false;
 
@@ -51,7 +56,7 @@ public class User extends BaseTimeEntity {
 
     @Builder
     public User(String username, String nickname, String password, String email,
-                AuthProvider provider, String providerId, Role role) {
+                AuthProvider provider, String providerId, Role role, UserStatus status) {
         this.username = username;
         this.nickname = nickname;
         this.password = password;
@@ -59,6 +64,7 @@ public class User extends BaseTimeEntity {
         this.provider = provider;
         this.providerId = providerId;
         this.role = role;
+        this.status = (status != null) ? status : UserStatus.ACTIVE;
     }
 
     public void updateUsername(String username) {
@@ -71,6 +77,10 @@ public class User extends BaseTimeEntity {
 
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    public void updateStatus(UserStatus status) {
+        this.status = status;
     }
 
     public void softDelete() {
