@@ -7,10 +7,14 @@
 
 package com.capstone.eqh.global.exception;
 
+import com.capstone.eqh.domain.user.enums.Role;
 import com.capstone.eqh.global.common.ApiResponse;
+import com.capstone.eqh.global.security.CustomUserDetails;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -42,11 +46,19 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException e) {
-        log.warn("[AccessDeniedException] {}", e.getMessage());
-        ErrorCode errorCode = ErrorCode.FORBIDDEN;
+        ErrorCode errorCode = isUnapprovedProf() ? ErrorCode.PROF_NOT_APPROVED : ErrorCode.FORBIDDEN;
+        log.warn("[AccessDeniedException] {} - {}", errorCode, e.getMessage());
         return ResponseEntity
                 .status(errorCode.getStatusCode())
                 .body(ApiResponse.failure(errorCode.getStatusCode(), errorCode.getMessage()));
+    }
+
+    private boolean isUnapprovedProf() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof CustomUserDetails cud)) {
+            return false;
+        }
+        return cud.getUser().getRole() == Role.PROF && !cud.isActive();
     }
 
     /** @Valid / @Validated 유효성 검증 실패 처리 */

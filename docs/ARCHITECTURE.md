@@ -14,32 +14,39 @@ src/main/java/com/capstone/eqh/
 ├── domain/
 │   ├── user/
 │   │   ├── entity/
-│   │   │   ├── User.java
+│   │   │   ├── User.java                              # status (PENDING/ACTIVE/REJECTED) 포함
 │   │   │   └── RefreshToken.java
 │   │   ├── enums/
 │   │   │   ├── Role.java                              # PROF / USER / ADMIN
-│   │   │   └── AuthProvider.java                      # LOCAL / KAKAO
+│   │   │   ├── AuthProvider.java                      # LOCAL / KAKAO
+│   │   │   └── UserStatus.java                        # PENDING / ACTIVE / REJECTED — PROF 승인 상태
 │   │   ├── repository/
-│   │   │   ├── UserRepository.java
+│   │   │   ├── UserRepository.java                    # findByRoleAndStatus 포함
 │   │   │   └── RefreshTokenRepository.java
 │   │   ├── dto/
 │   │   │   ├── request/
 │   │   │   │   ├── LoginRequestDto.java
-│   │   │   │   ├── SignupRequestDto.java
+│   │   │   │   ├── ProfSignupRequestDto.java
+│   │   │   │   ├── UserSocialSignupRequestDto.java
 │   │   │   │   ├── UserUpdateRequestDto.java
 │   │   │   │   ├── UserDeleteRequestDto.java
+│   │   │   │   ├── UserStatusUpdateRequestDto.java    # ADMIN PATCH status 본문
 │   │   │   │   ├── ReissueRequestDto.java
 │   │   │   │   └── LogoutRequestDto.java
 │   │   │   └── response/
-│   │   │       ├── AuthResponseDto.java               # accessToken 포함
-│   │   │       └── UserResponseDto.java
+│   │   │       ├── AuthResponseDto.java               # accessToken + (PROF 가입 시) status
+│   │   │       ├── UserResponseDto.java               # status 포함
+│   │   │       ├── PendingUserResponseDto.java        # ADMIN pending 목록 항목
+│   │   │       └── UserStatusResponseDto.java         # ADMIN approve/reject/status 응답
 │   │   ├── service/
-│   │   │   ├── UserAuthService.java                   # 로그인, 토큰 재발급, 로그아웃
-│   │   │   ├── UserSignupService.java                 # 회원가입
-│   │   │   └── UserService.java                       # 프로필 조회, 수정, 탈퇴
+│   │   │   ├── UserAuthService.java                   # 로그인, 토큰 재발급, 로그아웃, profSignup(토큰 발급 위임)
+│   │   │   ├── UserSignupService.java                 # 회원가입 — PROF는 status=PENDING, REJECTED 이메일 재가입 차단
+│   │   │   ├── UserService.java                       # 프로필 조회, 수정, 탈퇴
+│   │   │   └── AdminUserService.java                  # ADMIN: pending 목록, approve, reject, 임의 상태 변경
 │   │   └── controller/
 │   │       ├── AuthController.java                    # /api/auth/**
-│   │       └── UserController.java                    # /api/users/**
+│   │       ├── UserController.java                    # /api/users/**
+│   │       └── AdminUserController.java               # /api/admin/users/**
 │   │
 │   ├── quiz/
 │   │   ├── entity/
@@ -138,7 +145,7 @@ src/main/java/com/capstone/eqh/
 
 | 도메인 | 경로 | 주요 역할 |
 |--------|------|-----------|
-| `user` | `/api/auth/**`, `/api/users/**` | 인증, 회원가입, 프로필 관리 |
+| `user` | `/api/auth/**`, `/api/users/**`, `/api/admin/users/**` | 인증, 회원가입(PROF 승인 워크플로 포함), 프로필 관리, ADMIN의 PROF 승인/거절 |
 | `quiz` | `/api/quiz/**` | 퀴즈 세트·문제 관리, 채점, 오답 조회 (퀴즈는 단일 교안에 속함) |
 | `lesson` | `/api/lessons/**` | 교안 뷰어, 학생 수강 신청·교수 수락 |
 
@@ -182,6 +189,25 @@ QuizSubmissionAnswer (N) ──── (1) QuizQuestion
 | `lessonPage` | `lesson_page` | 교수가 지정한 교안 페이지 번호 |
 | `lessonParagraph` | `lesson_paragraph` | 교수가 지정한 교안 문단 번호 |
 
+### PROF 승인 게이팅 데이터 흐름
+
+```
+PROF 가입: POST /api/auth/profsignup
+  → UserSignupService.profSignup
+  → 이메일 인증 검증 → 기존 이메일이 REJECTED 면 EMAIL_REJECTED 409
+  → User 저장 (status=PENDING)
+  → UserAuthService가 토큰 발급 → AuthResponseDto(status=PENDING) 반환
+
+PROF 전용 호출 (예: POST /api/lessons):
+  → @PreAuthorize("hasRole('PROF') and principal.active")
+  → CustomUserDetails.isActive() = (user.status == ACTIVE)
+  → PENDING/REJECTED 면 AccessDeniedException
+  → GlobalExceptionHandler가 principal 검사 → PROF + 비활성 → PROF_NOT_APPROVED 403
+
+ADMIN 승인: POST /api/admin/users/{id}/approve
+  → AdminUserService.approve → User.updateStatus(ACTIVE)
+```
+
 ### 학생 수강 게이팅 데이터 흐름
 
 ```
@@ -219,17 +245,20 @@ GET /api/quiz/wrong-answers
   - 예외: `domain.user.service` — `UserAuthService`가 `JwtProvider`를 직접 사용하는 인증 서비스
 - DTO 네이밍: `...RequestDto` / `...ResponseDto`, 구조: `request/` / `response/` 분리
 - Service는 의존성 그래프 기준으로 분리
-  - `UserAuthService` — 로그인, 토큰 재발급, 로그아웃
-  - `UserSignupService` — 회원가입 (LOCAL), 소셜 유저 조회/생성 (`findOrCreateSocialUser`)
+  - `UserAuthService` — 로그인, 토큰 재발급, 로그아웃, PROF 가입 후 토큰 발급(`profSignup`)
+  - `UserSignupService` — 회원가입 (LOCAL은 PROF + status=PENDING으로 저장), 소셜 유저 조회/생성 (`findOrCreateSocialUser`)
   - `UserService` — 프로필 조회, 수정, 탈퇴
+  - `AdminUserService` — ADMIN의 PROF 승인 워크플로 (pending 목록, approve, reject, 임의 status 변경)
   - `QuizService` — 퀴즈 CRUD, 문제 관리, 채점, 오답 조회. USER 호출 시 `LessonEnrollmentRepository`로 게이팅
   - `LessonEnrollmentService` — 학생 신청, 교수 수락/거절, my 조회
 - Controller는 URL 경로 기준으로 분리
   - `AuthController` — `/api/auth/**`
   - `UserController` — `/api/users/**`
+  - `AdminUserController` — `/api/admin/users/**` (ADMIN-only, SecurityConfig `requestMatchers("/api/admin/**").hasRole("ADMIN")` 으로 보호)
   - `QuizController` — `/api/quiz/**`
   - `LessonController` — `/api/lessons/**`
   - `LessonEnrollmentController` — `/api/lessons/{id}/enrollments/**`, `/api/lessons/my`
+- **PROF 승인 게이팅**: PROF 전용 엔드포인트 `@PreAuthorize`는 `principal.active` 조건을 포함하여 PENDING/REJECTED PROF의 호출을 차단. `CustomUserDetails.isActive()`가 `user.status == ACTIVE` 반환. 차단 시 `GlobalExceptionHandler`가 `AccessDeniedException`을 `PROF_NOT_APPROVED`(403)로 변환
 - **소셜 로그인 유저 식별**: `provider` + `providerId` (카카오 OIDC `sub` claim) 조합
 - `PasswordEncoder` 빈은 순환 의존성 방지를 위해 `PasswordConfig`에 별도 분리
 - **퀴즈 채점**: `quiz_q.correct_answer`와 `student_answer`를 대소문자 무시 비교

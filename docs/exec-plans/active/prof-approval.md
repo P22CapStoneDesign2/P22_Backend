@@ -12,21 +12,21 @@ PROF 회원가입을 즉시 활성화하지 않고 ADMIN 수락 후 활성화한
 
 ## 수용 기준
 
-- [ ] `UserStatus` enum 추가 (PENDING / ACTIVE / REJECTED)
-- [ ] `User.status` 컬럼 추가, 기본값 ACTIVE, 기존 행은 ACTIVE로 백필
-- [ ] PROF 가입(`/api/auth/profsignup`) 시 status=PENDING으로 저장하고 토큰 발급은 정상 수행
-- [ ] PROF 가입 응답에 `status: "PENDING"` 포함
-- [ ] USER 카카오 가입은 status=ACTIVE로 그대로 동작
-- [ ] PROF 전용/소유자 API에서 PENDING이면 403 `PROF_NOT_APPROVED`
-- [ ] REJECTED 이메일로 `/api/auth/profsignup` 재시도 시 409 `EMAIL_REJECTED`
-- [ ] `GET /api/admin/users/pending` — 승인 대기 PROF 목록
-- [ ] `POST /api/admin/users/{id}/approve` — ACTIVE로 변경
-- [ ] `POST /api/admin/users/{id}/reject` — REJECTED로 변경
-- [ ] `PATCH /api/admin/users/{id}/status` — ADMIN 임의 상태 변경 (REJECTED → ACTIVE 등 후속 조정)
-- [ ] `GET /api/users/me` 응답에 `status` 포함
-- [ ] `docs/API.md`, `docs/ARCHITECTURE.md`, `docs/SECURITY.md`, `docs/generated/db-schema.md` 갱신
-- [ ] 단위 테스트 + 통합 테스트 (PENDING 차단 / APPROVED 후 정상 동작)
-- [ ] `./gradlew build` 통과
+- [x] `UserStatus` enum 추가 (PENDING / ACTIVE / REJECTED)
+- [x] `User.status` 컬럼 추가, 기본값 ACTIVE, 기존 행은 ACTIVE로 백필
+- [x] PROF 가입(`/api/auth/profsignup`) 시 status=PENDING으로 저장하고 토큰 발급은 정상 수행
+- [x] PROF 가입 응답에 `status: "PENDING"` 포함
+- [x] USER 카카오 가입은 status=ACTIVE로 그대로 동작
+- [x] PROF 전용/소유자 API에서 PENDING이면 403 `PROF_NOT_APPROVED`
+- [x] REJECTED 이메일로 `/api/auth/profsignup` 재시도 시 409 `EMAIL_REJECTED`
+- [x] `GET /api/admin/users/pending` — 승인 대기 PROF 목록
+- [x] `POST /api/admin/users/{id}/approve` — ACTIVE로 변경
+- [x] `POST /api/admin/users/{id}/reject` — REJECTED로 변경
+- [x] `PATCH /api/admin/users/{id}/status` — ADMIN 임의 상태 변경 (REJECTED → ACTIVE 등 후속 조정)
+- [x] `GET /api/users/me` 응답에 `status` 포함
+- [x] `docs/API.md`, `docs/ARCHITECTURE.md`, `docs/SECURITY.md`, `docs/generated/db-schema.md` 갱신
+- [x] 단위 테스트 + 통합 테스트 (PENDING 차단 / APPROVED 후 정상 동작)
+- [x] `./gradlew build` 통과
 
 ## API 추가/변경
 

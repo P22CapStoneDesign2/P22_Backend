@@ -65,7 +65,7 @@ public class LessonEnrollmentController {
     // ── 교수/관리자용 ────────────────────────────────────────────────────
 
     @GetMapping("/{id}/enrollments")
-    @PreAuthorize("(hasRole('PROF') and @lessonService.isOwner(#id, principal.userId)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('PROF') and principal.active and @lessonService.isOwner(#id, principal.userId)) or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Page<EnrollmentListItemResponseDto>>> listByLesson(
             @PathVariable Long id,
             @RequestParam(required = false) EnrollmentStatus status,
@@ -75,7 +75,7 @@ public class LessonEnrollmentController {
     }
 
     @PostMapping("/{id}/enrollments/{enrollmentId}/approve")
-    @PreAuthorize("(hasRole('PROF') and @lessonService.isOwner(#id, principal.userId)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('PROF') and principal.active and @lessonService.isOwner(#id, principal.userId)) or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<EnrollmentDecisionResponseDto>> approve(
             @PathVariable Long id,
             @PathVariable Long enrollmentId,
@@ -85,7 +85,7 @@ public class LessonEnrollmentController {
     }
 
     @PostMapping("/{id}/enrollments/{enrollmentId}/reject")
-    @PreAuthorize("(hasRole('PROF') and @lessonService.isOwner(#id, principal.userId)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('PROF') and principal.active and @lessonService.isOwner(#id, principal.userId)) or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<EnrollmentDecisionResponseDto>> reject(
             @PathVariable Long id,
             @PathVariable Long enrollmentId,

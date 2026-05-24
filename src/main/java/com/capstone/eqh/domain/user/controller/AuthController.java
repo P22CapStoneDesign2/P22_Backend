@@ -28,11 +28,11 @@ public class AuthController {
     private final UserAuthService userAuthService;
 
     @PostMapping("/profsignup")
-    public ResponseEntity<ApiResponse<Void>> profSignup(@Valid @RequestBody ProfSignupRequestDto request) {
-        userSignupService.profSignup(request);
+    public ResponseEntity<ApiResponse<AuthResponseDto>> profSignup(@Valid @RequestBody ProfSignupRequestDto request) {
+        AuthResponseDto response = userAuthService.profSignup(request);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(ApiResponse.success(201, "회원가입 성공", null));
+                .body(ApiResponse.success(201, "회원가입 성공", response));
     }
 
     @PostMapping("/usersignup")
