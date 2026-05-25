@@ -80,6 +80,6 @@ ORDER BY ordinal_position;
 ## 교훈 / 재발 방지
 
 - `ddl-auto: update` 는 **NOT NULL 컬럼 추가, 기존 NOT NULL 해제, 컬럼 rename, FK 정리 등 제약 관련 변경을 자동 반영하지 않는다.** 스키마에 직접 반영하지 않으면 엔티티-DB 가 어긋난 채 부팅된다.
-- 엔티티 분리/리팩토링 PR 에는 항상 **Supabase 에서 실행할 SQL 마이그레이션** 을 PR 설명에 함께 적는다.
+- 엔티티 분리/리팩토링 PR 에는 항상 **`src/main/resources/db/migration/V{n}__*.sql`** 을 함께 커밋한다. (Flyway 도입 — [design-docs/db-migration.md](../design-docs/db-migration.md))
 - 분리 이후 FK 컬럼명이 의미와 일치하는지 즉시 점검한다 (예: `Quiz.material` 의 FK 는 `lesson_id` 가 아니라 `lesson_material_id` 여야 의미가 맞는다).
-- 운영 환경 도입 전에 Flyway 등 마이그레이션 도구를 붙여 `ddl-auto: validate` 로 전환할 것.
+- ~~운영 환경 도입 전에 Flyway 등 마이그레이션 도구를 붙여 `ddl-auto: validate` 로 전환할 것.~~ → **2026-05-25 도입 완료.**

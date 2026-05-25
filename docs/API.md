@@ -22,7 +22,7 @@
 
 | Status | 설명 |
 |--------|------|
-| 400 | 잘못된 요청 (파라미터 오류) |
+| 400 | 잘못된 요청 (파라미터 오류 / 요청 본문 누락·형식 오류) |
 | 401 | 인증 실패 (토큰 없음 / 만료 / 인증번호 불일치) |
 | 403 | 권한 없음 / 이메일 미인증 |
 | 404 | 리소스 없음 / 인증번호 만료 |
@@ -78,10 +78,7 @@
 | `GET` | `/api/lessons/{lessonId}/enrollments` | ✅ | PROF(본인)/ADMIN | 강의 신청 목록 조회 |
 | `POST` | `/api/lessons/{lessonId}/enrollments/{enrollmentId}/approve` | ✅ | PROF(본인)/ADMIN | 신청 수락 |
 | `POST` | `/api/lessons/{lessonId}/enrollments/{enrollmentId}/reject` | ✅ | PROF(본인)/ADMIN | 신청 거절 |
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
 ### 교안
 
 | Method | URL | 인증 | 권한 | 설명 |

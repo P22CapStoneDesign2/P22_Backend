@@ -82,28 +82,33 @@ src/main/java/com/capstone/eqh/
 │   │
 │   └── lesson/
 │       ├── entity/
-│       │   ├── Lesson.java                            # lecture_material 테이블
+│       │   ├── Lesson.java                            # lesson 테이블 — 강의 (교안의 상위)
+│       │   ├── LessonMaterial.java                    # lecture_material 테이블 — 교안 (lesson_id FK NOT NULL)
 │       │   └── LessonEnrollment.java                  # lesson_enrollment 테이블 — 학생 수강 신청
 │       ├── enums/
 │       │   └── EnrollmentStatus.java                  # PENDING / APPROVED / REJECTED
 │       ├── repository/
 │       │   ├── LessonRepository.java
+│       │   ├── LessonMaterialRepository.java
 │       │   └── LessonEnrollmentRepository.java
 │       ├── dto/
 │       │   ├── request/
-│       │   │   ├── LessonCreateRequestDto.java
-│       │   │   └── LessonUpdateRequestDto.java
+│       │   │   ├── LessonCreateRequestDto.java        # 강의 및 교안 생성 본문 재사용
+│       │   │   └── LessonUpdateRequestDto.java        # 강의 및 교안 수정 본문 재사용
 │       │   └── response/
 │       │       ├── LessonResponseDto.java
+│       │       ├── LessonMaterialResponseDto.java     # 교안 단건/목록 응답
 │       │       ├── EnrollmentResponseDto.java         # 수강 신청 단건
 │       │       ├── EnrollmentDecisionResponseDto.java # 수락/거절 결과
 │       │       ├── EnrollmentListItemResponseDto.java # 교수용 신청 목록 항목 (학생 정보 포함)
-│       │       └── MyLessonResponseDto.java           # 학생 my 교안 목록 항목 (approvedAt 포함)
+│       │       └── MyLessonResponseDto.java           # 학생 my 강의 목록 항목 (approvedAt 포함)
 │       ├── service/
 │       │   ├── LessonService.java
+│       │   ├── LessonMaterialService.java
 │       │   └── LessonEnrollmentService.java
 │       └── controller/
 │           ├── LessonController.java                  # /api/lessons/**
+│           ├── LessonMaterialController.java          # /api/lessons/{id}/materials/**
 │           ├── LessonEnrollmentController.java        # /api/lessons/{id}/enrollments/**, /api/lessons/my
 │           └── LessonAdminController.java             # /api/admin/lessons/**
 │
@@ -147,7 +152,7 @@ src/main/java/com/capstone/eqh/
 |--------|------|-----------|
 | `user` | `/api/auth/**`, `/api/users/**`, `/api/admin/professors/**` | 인증, 회원가입(PROF 승인 워크플로 포함), 프로필 관리, ADMIN의 PROF 승인/거절 |
 | `quiz` | `/api/quiz/**` | 퀴즈 세트·문제 관리, 채점, 오답 조회 (퀴즈는 단일 교안에 속함) |
-| `lesson` | `/api/lessons/**` | 교안 뷰어, 학생 수강 신청·교수 수락 |
+| `lesson` | `/api/lessons/**` | 강의·교안 관리, 학생 수강 신청·교수 수락 (강의 1 ──< 교안 N) |
 
 ## global 책임 요약
 
@@ -166,12 +171,13 @@ src/main/java/com/capstone/eqh/
 ### 엔티티 관계
 
 ```
-Quiz (N) ──── (1) Lesson               ← lesson_id FK (NOT NULL) — 게이팅 기준
+Lesson (1) ──── (N) LessonMaterial             ← lesson_id FK (NOT NULL) — 강의-교안 소속
+Quiz (N) ──── (1) LessonMaterial               ← lesson_material_id FK (NOT NULL) — 게이팅 기준 (material.lesson 으로 한 다리)
 Quiz (1) ──── (N) QuizQuestion
-QuizQuestion (N) ──── (1) Lesson       ← anchor_id FK (nullable) — 페이지/문단 참조
+QuizQuestion (N) ──── (1) LessonMaterial       ← anchor_id FK (nullable) — 페이지/문단 참조
 QuizQuestion (1) ──── (N) QuizOption
 
-LessonEnrollment (N) ──── (1) Lesson
+LessonEnrollment (N) ──── (1) Lesson           ← lesson_id FK (NOT NULL)
 LessonEnrollment (N) ──── (1) User (student)
 LessonEnrollment (N) ──── (0..1) User (decidedBy)   ← PROF/ADMIN
 
@@ -185,7 +191,7 @@ QuizSubmissionAnswer (N) ──── (1) QuizQuestion
 
 | 필드 | DB 컬럼 | 설명 |
 |------|---------|------|
-| `anchor` | `anchor_id` | 참조 교안 FK → lecture_material (nullable) |
+| `anchor` | `anchor_id` | 참조 교안 FK → `lecture_material` (nullable) |
 | `lessonPage` | `lesson_page` | 교수가 지정한 교안 페이지 번호 |
 | `lessonParagraph` | `lesson_paragraph` | 교수가 지정한 교안 문단 번호 |
 
@@ -213,7 +219,7 @@ ADMIN 승인: POST /api/admin/professors/{id}/approve
 ```
 USER → GET /api/quiz/{quizId}                            (또는 POST submit)
   → QuizService.assertEnrolledIfStudent(quiz, userId)
-  → LessonEnrollmentRepository.existsByLessonIdAndStudentIdAndStatus(quiz.lesson.id, userId, APPROVED)
+  → LessonEnrollmentRepository.existsByLessonIdAndStudentIdAndStatus(quiz.material.lesson.id, userId, APPROVED)
   → false 이면 ENROLLMENT_NOT_APPROVED 403
 ```
 
@@ -228,8 +234,9 @@ LessonEnrollmentRepository.findApprovedByStudentId(userId, pageable)
 ```
 GET /api/quiz/wrong-answers
  → QuizSubmissionAnswerRepository.findWrongAnswersByStudentId()
- → QuizSubmissionAnswer → QuizQuestion → Lesson (anchor)
+ → QuizSubmissionAnswer → QuizQuestion → LessonMaterial (anchor)
  → WrongAnswerResponseDto { lessonRef { lessonId, lessonTitle, lessonPage, lessonParagraph } }
+ (lessonRef.lessonId 는 응답 필드명이며 실제 ID 는 lecture_material.id — 호환 유지를 위해 필드명 미변경)
 ```
 
 ---
