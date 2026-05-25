@@ -2,7 +2,7 @@
 
 > 이 파일은 엔티티 클래스 기반으로 유지됩니다.
 > 엔티티 변경 시 이 파일도 함께 업데이트해야 합니다.
-> 마지막 갱신: 2026-05-25
+> 마지막 갱신: 2026-05-25 (quiz.lesson_id → quiz.lesson_material_id 리네임)
 
 ---
 
@@ -105,7 +105,7 @@
 |------|------|------|------|
 | `id` | BIGINT | PK, AUTO_INCREMENT | |
 | `professor_id` | BIGINT | NOT NULL, FK → users | 출제 교수 |
-| `lesson_id` | BIGINT | NOT NULL, FK → lecture_material | 퀴즈가 속한 교안 (게이팅 기준) |
+| `lesson_material_id` | BIGINT | NOT NULL, FK → lecture_material | 퀴즈가 속한 교안 (게이팅 기준) |
 | `title` | VARCHAR(200) | NOT NULL | 퀴즈 제목 |
 | `description` | VARCHAR(500) | NULL | 퀴즈 설명 |
 | `deleted` | BOOLEAN | NOT NULL, DEFAULT false | 소프트 삭제 플래그 |
@@ -113,7 +113,7 @@
 | `created_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
 | `updated_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
 
-> 1차 범위에서 `lesson_id`는 생성 시점 고정, `PUT /api/quiz/{quizId}`에서는 변경 불가.
+> 1차 범위에서 `lesson_material_id`는 생성 시점 고정, `PUT /api/quiz/{quizId}`에서는 변경 불가.
 
 > Hibernate `@SQLDelete` / `@SQLRestriction` 으로 자동 소프트 삭제 및 조회 제외 적용. `JpaRepository.delete()` 호출 시 `UPDATE quiz SET deleted=true, deleted_at=NOW()` 가 실행되며, 모든 JPA 조회에서 `deleted=false` 필터가 자동 부착된다.
 
@@ -202,7 +202,7 @@ users (1) ──── (N) lesson_enrollment      ← decided_by (nullable)
 lesson (1) ──── (N) lecture_material      ← lesson_id (NOT NULL)
 lesson (1) ──── (N) lesson_enrollment     ← lesson_id (NOT NULL)
 
-lecture_material (1) ──── (N) quiz        ← lesson_id (NOT NULL)
+lecture_material (1) ──── (N) quiz        ← lesson_material_id (NOT NULL)
 
 quiz (1) ──── (N) quiz_q
 quiz (1) ──── (N) quiz_sub

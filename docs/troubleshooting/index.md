@@ -45,3 +45,4 @@
 | [jwt-filter-public-401.md](jwt-filter-public-401.md) | `JwtFilter`가 `permitAll` 엔드포인트에서도 토큰 검증을 시도해, 헤더의 stale 토큰 때문에 회원가입·재발급이 401로 차단되던 문제 | 2026-05-14 |
 | [supabase-pooler-session-max-clients.md](supabase-pooler-session-max-clients.md) | Supabase Supavisor session mode(pool_size=15)를 좀비 JDBC 세션이 점유해 `bootRun` 시 `EMAXCONNSESSION`으로 `entityManagerFactory` 빈 생성이 실패하던 문제 | 2026-05-19 |
 | [lecture-material-content-not-null.md](lecture-material-content-not-null.md) | `lecture_material.content` 컬럼에 NOT NULL 제약이 잔존해 교안 생성(POST /api/lessons) 시 500 발생. `ddl-auto: update`는 NOT NULL 제거를 하지 않음 | 2026-05-24 |
+| [lecture-material-missing-lesson-id.md](lecture-material-missing-lesson-id.md) | 강의/교안 분리 후 `lecture_material.lesson_id` 컬럼이 실제 테이블에 추가되지 않아 교안 생성 500. `ddl-auto: update`는 기존 행이 있는 테이블에 NOT NULL 컬럼을 추가하지 못함. `Quiz.material` FK 도 `lesson_material_id` 로 리네임 | 2026-05-25 |

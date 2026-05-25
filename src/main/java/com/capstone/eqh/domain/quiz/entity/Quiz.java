@@ -35,7 +35,7 @@ public class Quiz extends BaseTimeEntity {
     private User professor;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "lesson_id", nullable = false)
+    @JoinColumn(name = "lesson_material_id", nullable = false)
     private LessonMaterial material;
 
     @Column(nullable = false, length = 200)
