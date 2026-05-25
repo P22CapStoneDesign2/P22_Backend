@@ -3,11 +3,11 @@ package com.capstone.eqh.domain.user.dto.response;
 import com.capstone.eqh.domain.user.entity.User;
 import com.capstone.eqh.domain.user.enums.UserStatus;
 
-public record UserStatusResponseDto(
+public record ProfessorStatusResponseDto(
         Long id,
         UserStatus status
 ) {
-    public static UserStatusResponseDto from(User user) {
-        return new UserStatusResponseDto(user.getId(), user.getStatus());
+    public static ProfessorStatusResponseDto from(User user) {
+        return new ProfessorStatusResponseDto(user.getId(), user.getStatus());
     }
 }

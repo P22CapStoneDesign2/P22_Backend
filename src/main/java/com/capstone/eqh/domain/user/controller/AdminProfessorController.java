@@ -1,9 +1,9 @@
 package com.capstone.eqh.domain.user.controller;
 
-import com.capstone.eqh.domain.user.dto.request.UserStatusUpdateRequestDto;
-import com.capstone.eqh.domain.user.dto.response.PendingUserResponseDto;
-import com.capstone.eqh.domain.user.dto.response.UserStatusResponseDto;
-import com.capstone.eqh.domain.user.service.AdminUserService;
+import com.capstone.eqh.domain.user.dto.request.ProfessorStatusUpdateRequestDto;
+import com.capstone.eqh.domain.user.dto.response.PendingProfessorResponseDto;
+import com.capstone.eqh.domain.user.dto.response.ProfessorStatusResponseDto;
+import com.capstone.eqh.domain.user.service.AdminProfessorService;
 import com.capstone.eqh.global.common.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,36 +21,36 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admin/users")
+@RequestMapping("/api/admin/professors")
 @RequiredArgsConstructor
-public class AdminUserController {
+public class AdminProfessorController {
 
-    private final AdminUserService adminUserService;
+    private final AdminProfessorService adminProfessorService;
 
     @GetMapping("/pending")
-    public ResponseEntity<ApiResponse<Page<PendingUserResponseDto>>> listPending(
+    public ResponseEntity<ApiResponse<Page<PendingProfessorResponseDto>>> listPendingProfessors(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.ASC) Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.success(200, "승인 대기 목록 조회 성공",
-                adminUserService.listPending(pageable)));
+                adminProfessorService.listPendingProfessors(pageable)));
     }
 
     @PostMapping("/{id}/approve")
-    public ResponseEntity<ApiResponse<UserStatusResponseDto>> approve(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<ProfessorStatusResponseDto>> approveProfessor(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(200, "계정을 승인했습니다.",
-                adminUserService.approve(id)));
+                adminProfessorService.approveProfessor(id)));
     }
 
     @PostMapping("/{id}/reject")
-    public ResponseEntity<ApiResponse<UserStatusResponseDto>> reject(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<ProfessorStatusResponseDto>> rejectProfessor(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(200, "계정을 거절했습니다.",
-                adminUserService.reject(id)));
+                adminProfessorService.rejectProfessor(id)));
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<UserStatusResponseDto>> changeStatus(
+    public ResponseEntity<ApiResponse<ProfessorStatusResponseDto>> changeProfessorStatus(
             @PathVariable Long id,
-            @Valid @RequestBody UserStatusUpdateRequestDto request) {
+            @Valid @RequestBody ProfessorStatusUpdateRequestDto request) {
         return ResponseEntity.ok(ApiResponse.success(200, "계정 상태를 변경했습니다.",
-                adminUserService.changeStatus(id, request.status())));
+                adminProfessorService.changeProfessorStatus(id, request.status())));
     }
 }

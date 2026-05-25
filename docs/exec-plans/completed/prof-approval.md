@@ -20,10 +20,10 @@ PROF 회원가입을 즉시 활성화하지 않고 ADMIN 수락 후 활성화한
 - [x] USER 카카오 가입은 status=ACTIVE로 그대로 동작
 - [x] PROF 전용/소유자 API에서 PENDING이면 403 `PROF_NOT_APPROVED`
 - [x] REJECTED 이메일로 `/api/auth/profsignup` 재시도 시 409 `EMAIL_REJECTED`
-- [x] `GET /api/admin/users/pending` — 승인 대기 PROF 목록
-- [x] `POST /api/admin/users/{id}/approve` — ACTIVE로 변경
-- [x] `POST /api/admin/users/{id}/reject` — REJECTED로 변경
-- [x] `PATCH /api/admin/users/{id}/status` — ADMIN 임의 상태 변경 (REJECTED → ACTIVE 등 후속 조정)
+- [x] `GET /api/admin/professors/pending` — 승인 대기 PROF 목록
+- [x] `POST /api/admin/professors/{id}/approve` — ACTIVE로 변경
+- [x] `POST /api/admin/professors/{id}/reject` — REJECTED로 변경
+- [x] `PATCH /api/admin/professors/{id}/status` — ADMIN 임의 상태 변경 (REJECTED → ACTIVE 등 후속 조정)
 - [x] `GET /api/users/me` 응답에 `status` 포함
 - [x] `docs/API.md`, `docs/ARCHITECTURE.md`, `docs/SECURITY.md`, `docs/generated/db-schema.md` 갱신
 - [x] 단위 테스트 + 통합 테스트 (PENDING 차단 / APPROVED 후 정상 동작)
@@ -42,10 +42,10 @@ PROF 회원가입을 즉시 활성화하지 않고 ADMIN 수락 후 활성화한
 
 | Method | URL | 권한 | 설명 |
 |--------|-----|------|------|
-| GET | `/api/admin/users/pending` | ADMIN | 승인 대기 PROF 목록 (페이지네이션) |
-| POST | `/api/admin/users/{id}/approve` | ADMIN | ACTIVE로 변경 |
-| POST | `/api/admin/users/{id}/reject` | ADMIN | REJECTED로 변경 |
-| PATCH | `/api/admin/users/{id}/status` | ADMIN | 임의 상태 변경 (`status` body) |
+| GET | `/api/admin/professors/pending` | ADMIN | 승인 대기 PROF 목록 (페이지네이션) |
+| POST | `/api/admin/professors/{id}/approve` | ADMIN | ACTIVE로 변경 |
+| POST | `/api/admin/professors/{id}/reject` | ADMIN | REJECTED로 변경 |
+| PATCH | `/api/admin/professors/{id}/status` | ADMIN | 임의 상태 변경 (`status` body) |
 
 ## ErrorCode 추가
 
