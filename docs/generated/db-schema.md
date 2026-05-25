@@ -57,6 +57,26 @@
 
 ---
 
+## lesson_pdfs (교안 PDF 메타데이터)
+
+엔티티: `domain/lesson/entity/LessonPdf.java`  
+파일 바이너리: Supabase Storage 버킷 `lesson-pdf`, 경로 `{lesson_id}/{uuid}.pdf`
+
+| 컬럼 | 타입 | 제약 | 설명 |
+|------|------|------|------|
+| `id` | BIGINT | PK, AUTO_INCREMENT | PDF ID |
+| `lesson_id` | BIGINT | NOT NULL, FK → lecture_material | 교안 |
+| `original_file_name` | VARCHAR(255) | NOT NULL | 원본 파일명 |
+| `saved_file_name` | VARCHAR(255) | NOT NULL | UUID 저장 파일명 |
+| `storage_path` | VARCHAR(512) | NOT NULL | 버킷 내 상대 경로 |
+| `file_url` | TEXT | NOT NULL | 공개 URL |
+| `file_size` | BIGINT | NOT NULL | 바이트 크기 |
+| `uploaded_by` | BIGINT | NOT NULL, FK → users | 업로드 사용자 |
+| `created_at` | TIMESTAMP | NOT NULL | 업로드 시각 (BaseTimeEntity) |
+| `updated_at` | TIMESTAMP | NOT NULL | BaseTimeEntity |
+
+---
+
 ## quiz (퀴즈 세트)
 
 엔티티: `domain/quiz/entity/Quiz.java`
