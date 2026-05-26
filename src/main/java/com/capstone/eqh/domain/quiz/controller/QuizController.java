@@ -37,8 +37,8 @@ public class QuizController {
     // ── 퀴즈 세트 CRUD ──────────────────────────────────────────────────
 
     @PostMapping
-    @PreAuthorize("hasRole('PROF')")
-    public ResponseEntity<ApiResponse<QuizResponseDto>> create(
+    @PreAuthorize("hasRole('PROF') and principal.active")
+    public ResponseEntity<ApiResponse<QuizDetailResponseDto>> create(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody QuizCreateRequestDto request) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -49,26 +49,31 @@ public class QuizController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<QuizResponseDto>>> getAll(
             @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(required = false) Long materialId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         Role role = userDetails.getUser().getRole();
         return ResponseEntity.ok(ApiResponse.success(200, "퀴즈 목록 조회 성공",
-                quizService.getAll(userDetails.getUserId(), role, pageable)));
+                quizService.getAll(userDetails.getUserId(), role, materialId, pageable)));
     }
 
     @GetMapping("/{quizId}")
-    public ResponseEntity<ApiResponse<QuizDetailResponseDto>> getOne(@PathVariable Long quizId) {
-        return ResponseEntity.ok(ApiResponse.success(200, "퀴즈 조회 성공", quizService.getOne(quizId)));
+    public ResponseEntity<ApiResponse<QuizDetailResponseDto>> getOne(
+            @PathVariable Long quizId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+        Role role = userDetails.getUser().getRole();
+        return ResponseEntity.ok(ApiResponse.success(200, "퀴즈 조회 성공",
+                quizService.getOne(quizId, userDetails.getUserId(), role)));
     }
 
     @GetMapping("/{quizId}/edit")
-    @PreAuthorize("(hasRole('PROF') and @quizService.isOwner(#quizId, principal.userId)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('PROF') and principal.active and @quizService.isOwner(#quizId, principal.userId)) or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<QuizEditResponseDto>> getForEdit(@PathVariable Long quizId) {
         return ResponseEntity.ok(ApiResponse.success(200, "퀴즈 수정용 조회 성공",
                 quizService.getForEdit(quizId)));
     }
 
     @PutMapping("/{quizId}")
-    @PreAuthorize("(hasRole('PROF') and @quizService.isOwner(#quizId, principal.userId)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('PROF') and principal.active and @quizService.isOwner(#quizId, principal.userId)) or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<QuizResponseDto>> update(
             @PathVariable Long quizId,
             @Valid @RequestBody QuizUpdateRequestDto request) {
@@ -77,7 +82,7 @@ public class QuizController {
     }
 
     @DeleteMapping("/{quizId}")
-    @PreAuthorize("(hasRole('PROF') and @quizService.isOwner(#quizId, principal.userId)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('PROF') and principal.active and @quizService.isOwner(#quizId, principal.userId)) or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long quizId) {
         quizService.delete(quizId);
         return ResponseEntity.ok(ApiResponse.success("퀴즈 삭제 성공"));
@@ -86,7 +91,7 @@ public class QuizController {
     // ── 문제 관리 ────────────────────────────────────────────────────────
 
     @PostMapping("/{quizId}/questions")
-    @PreAuthorize("(hasRole('PROF') and @quizService.isOwner(#quizId, principal.userId)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('PROF') and principal.active and @quizService.isOwner(#quizId, principal.userId)) or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<QuizQuestionResponseDto>> addQuestion(
             @PathVariable Long quizId,
             @Valid @RequestBody QuizQuestionCreateRequestDto request) {
@@ -96,7 +101,7 @@ public class QuizController {
     }
 
     @PutMapping("/{quizId}/questions/{questionId}")
-    @PreAuthorize("(hasRole('PROF') and @quizService.isOwner(#quizId, principal.userId)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('PROF') and principal.active and @quizService.isOwner(#quizId, principal.userId)) or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<QuizQuestionResponseDto>> updateQuestion(
             @PathVariable Long quizId,
             @PathVariable Long questionId,
@@ -106,7 +111,7 @@ public class QuizController {
     }
 
     @DeleteMapping("/{quizId}/questions/{questionId}")
-    @PreAuthorize("(hasRole('PROF') and @quizService.isOwner(#quizId, principal.userId)) or hasRole('ADMIN')")
+    @PreAuthorize("(hasRole('PROF') and principal.active and @quizService.isOwner(#quizId, principal.userId)) or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<Void>> deleteQuestion(
             @PathVariable Long quizId,
             @PathVariable Long questionId) {

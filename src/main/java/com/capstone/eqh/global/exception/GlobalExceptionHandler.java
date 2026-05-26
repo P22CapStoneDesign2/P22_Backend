@@ -7,10 +7,15 @@
 
 package com.capstone.eqh.global.exception;
 
+import com.capstone.eqh.domain.user.enums.Role;
 import com.capstone.eqh.global.common.ApiResponse;
+import com.capstone.eqh.global.security.CustomUserDetails;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -42,11 +47,19 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDeniedException(AccessDeniedException e) {
-        log.warn("[AccessDeniedException] {}", e.getMessage());
-        ErrorCode errorCode = ErrorCode.FORBIDDEN;
+        ErrorCode errorCode = isUnapprovedProf() ? ErrorCode.PROF_NOT_APPROVED : ErrorCode.FORBIDDEN;
+        log.warn("[AccessDeniedException] {} - {}", errorCode, e.getMessage());
         return ResponseEntity
                 .status(errorCode.getStatusCode())
                 .body(ApiResponse.failure(errorCode.getStatusCode(), errorCode.getMessage()));
+    }
+
+    private boolean isUnapprovedProf() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof CustomUserDetails cud)) {
+            return false;
+        }
+        return cud.getUser().getRole() == Role.PROF && !cud.isActive();
     }
 
     /** @Valid / @Validated 유효성 검증 실패 처리 */
@@ -60,6 +73,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .badRequest()
                 .body(ApiResponse.failure(400, message));
+    }
+
+    /**
+     * 요청 본문 누락 또는 JSON 파싱 실패 처리.
+     * - Content-Type 누락/오류, body 비어있음, JSON syntax 오류 등이 이 경로로 들어온다.
+     * - catch-all 보다 위에 위치해 500 으로 새지 않도록 명시적으로 400 으로 변환한다.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadable(HttpMessageNotReadableException e) {
+        log.warn("[HttpMessageNotReadableException] {}", e.getMessage());
+        ErrorCode errorCode = ErrorCode.INVALID_REQUEST_BODY;
+        return ResponseEntity
+                .status(errorCode.getStatusCode())
+                .body(ApiResponse.failure(errorCode.getStatusCode(), errorCode.getMessage()));
     }
 
     /** 예상치 못한 예외 처리 */

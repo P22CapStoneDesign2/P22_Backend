@@ -14,6 +14,11 @@
 - [x] `JwtFilter`는 `/api/auth/**`, `/oauth2/**`, `/login/oauth2/**` 경로에서 `shouldNotFilter()`로 토큰 검증을 skip — 회원가입·로그인·재발급이 헤더의 stale 토큰에 의해 차단되는 것을 방지 — 참고: [troubleshooting/jwt-filter-public-401.md](troubleshooting/jwt-filter-public-401.md)
 - [x] 탈퇴(soft-delete) 유저는 `CustomUserDetails.isEnabled()` → `false`로 인증 거부
 - [x] `@PreAuthorize`로 메서드 레벨 권한 검증
+- [x] PROF 가입 직후 `status=PENDING` 저장 — ADMIN 승인(`ACTIVE`) 전까지 PROF 전용 기능(교안/퀴즈 CRUD, 수강 신청 수락) 사용 불가
+  - `CustomUserDetails.isActive()` 기반으로 `@PreAuthorize("hasRole('PROF') and principal.active ...")` 평가
+  - 비활성 PROF가 차단되면 `GlobalExceptionHandler`가 `AccessDeniedException`을 `PROF_NOT_APPROVED`(403, "교수 계정 승인 대기 중입니다.")로 변환
+  - 토큰 자체는 가입 시 정상 발급되므로 `GET /api/users/me`로 상태 확인 가능
+- [x] 가입 거절된(`REJECTED`) 이메일로 PROF 재가입 시도는 `EMAIL_REJECTED`(409)로 차단. DB 행은 유지되며 ADMIN이 `PATCH /api/admin/professors/{id}/status`로 재활성화 가능
 - [ ] Refresh Token 탈취 감지 (동일 토큰 재사용 감지) 미구현
 
 ## 입력 검증

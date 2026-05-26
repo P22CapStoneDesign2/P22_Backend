@@ -1,6 +1,7 @@
 package com.capstone.eqh.domain.user.dto.response;
 
 import com.capstone.eqh.domain.user.entity.User;
+import com.capstone.eqh.domain.user.enums.UserStatus;
 
 import java.time.LocalDateTime;
 
@@ -11,6 +12,7 @@ public record UserResponseDto(
         String email,
         String provider,
         String role,
+        UserStatus status,
         LocalDateTime createdAt
 ) {
     public static UserResponseDto from(User user) {
@@ -21,6 +23,7 @@ public record UserResponseDto(
                 user.getEmail(),
                 user.getProvider().name(),
                 user.getRole().name(),
+                user.getStatus(),
                 user.getCreatedAt()
         );
     }

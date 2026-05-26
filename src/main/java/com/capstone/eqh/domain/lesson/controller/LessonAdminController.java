@@ -23,6 +23,6 @@ public class LessonAdminController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<LessonResponseDto>>> getAllForAdmin(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(ApiResponse.success(200, "전체 교안 목록 조회 성공", lessonService.getAll(pageable)));
+        return ResponseEntity.ok(ApiResponse.success(200, "전체 강의 목록 조회 성공", lessonService.getAll(pageable)));
     }
 }

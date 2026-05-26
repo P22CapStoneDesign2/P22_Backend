@@ -4,6 +4,7 @@ import com.capstone.eqh.domain.user.dto.request.ProfSignupRequestDto;
 import com.capstone.eqh.domain.user.entity.User;
 import com.capstone.eqh.domain.user.enums.AuthProvider;
 import com.capstone.eqh.domain.user.enums.Role;
+import com.capstone.eqh.domain.user.enums.UserStatus;
 import com.capstone.eqh.domain.user.repository.UserRepository;
 import com.capstone.eqh.global.exception.CustomException;
 import com.capstone.eqh.global.exception.ErrorCode;
@@ -23,29 +24,36 @@ public class UserSignupService {
     private final EmailVerificationService emailVerificationService;
 
     @Transactional
-    public void profSignup(ProfSignupRequestDto request) {
+    public User profSignup(ProfSignupRequestDto request) {
         emailVerificationService.requireEmailVerifiedForSignup(request.email());
 
         if (!request.password().equals(request.passwordConfirm())) {
             throw new CustomException(ErrorCode.PASSWORD_CONFIRM_MISMATCH);
         }
-        if (userRepository.existsByEmail(request.email())) {
+
+        userRepository.findByEmail(request.email()).ifPresent(existing -> {
+            if (existing.getStatus() == UserStatus.REJECTED) {
+                throw new CustomException(ErrorCode.EMAIL_REJECTED);
+            }
             throw new CustomException(ErrorCode.EMAIL_ALREADY_EXISTS);
-        }
+        });
+
         if (userRepository.existsByNickname(request.nickname())) {
             throw new CustomException(ErrorCode.NICKNAME_ALREADY_EXISTS);
         }
 
-        userRepository.save(User.builder()
+        User user = userRepository.save(User.builder()
                 .username(request.username())
                 .email(request.email())
                 .nickname(request.nickname())
                 .password(passwordEncoder.encode(request.password()))
                 .provider(AuthProvider.LOCAL)
                 .role(Role.PROF)
+                .status(UserStatus.PENDING)
                 .build());
 
         emailVerificationService.consumeEmailVerification(request.email());
+        return user;
     }
 
     @Transactional(readOnly = true)

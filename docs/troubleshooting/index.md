@@ -44,3 +44,7 @@
 | [jwt-secret-key-length.md](jwt-secret-key-length.md) | `application-local.yaml`의 JWT secret이 248비트라 jjwt 0.12.x의 HMAC-SHA 최소 요구(256비트)에 미달해 Spring Context 로딩 실패 | 2026-05-14 |
 | [jwt-filter-public-401.md](jwt-filter-public-401.md) | `JwtFilter`가 `permitAll` 엔드포인트에서도 토큰 검증을 시도해, 헤더의 stale 토큰 때문에 회원가입·재발급이 401로 차단되던 문제 | 2026-05-14 |
 | [supabase-pooler-session-max-clients.md](supabase-pooler-session-max-clients.md) | Supabase Supavisor session mode(pool_size=15)를 좀비 JDBC 세션이 점유해 `bootRun` 시 `EMAXCONNSESSION`으로 `entityManagerFactory` 빈 생성이 실패하던 문제 | 2026-05-19 |
+| [lecture-material-content-not-null.md](lecture-material-content-not-null.md) | `lecture_material.content` 컬럼에 NOT NULL 제약이 잔존해 교안 생성(POST /api/lessons) 시 500 발생. `ddl-auto: update`는 NOT NULL 제거를 하지 않음 | 2026-05-24 |
+| [lecture-material-missing-lesson-id.md](lecture-material-missing-lesson-id.md) | 강의/교안 분리 후 `lecture_material.lesson_id` 컬럼이 실제 테이블에 추가되지 않아 교안 생성 500. `ddl-auto: update`는 기존 행이 있는 테이블에 NOT NULL 컬럼을 추가하지 못함. `Quiz.material` FK 도 `lesson_material_id` 로 리네임 | 2026-05-25 |
+| [quiz-legacy-lesson-id-not-null.md](quiz-legacy-lesson-id-not-null.md) | `quiz.lesson_id` 가 RENAME 되지 않고 `lesson_material_id` 와 함께 NOT NULL 로 잔존해 `POST /api/quiz` 가 500. `DROP COLUMN` 으로 정리하고 마이그레이션 SQL 을 `src/main/resources/sql/migrations/` 에 커밋 | 2026-05-25 |
+| [request-body-missing-500.md](request-body-missing-500.md) | `HttpMessageNotReadableException` (body 누락·JSON 파싱 실패) 이 전용 핸들러 없어 catch-all 로 빠지면서 500 으로 응답되던 문제. `INVALID_REQUEST_BODY` (400) 핸들러 추가로 정정 | 2026-05-25 |

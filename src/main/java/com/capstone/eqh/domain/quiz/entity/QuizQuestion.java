@@ -1,6 +1,6 @@
 package com.capstone.eqh.domain.quiz.entity;
 
-import com.capstone.eqh.domain.lesson.entity.Lesson;
+import com.capstone.eqh.domain.lesson.entity.LessonMaterial;
 import com.capstone.eqh.domain.quiz.enums.QuizType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -35,7 +35,7 @@ public class QuizQuestion {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "anchor_id")
-    private Lesson anchor;
+    private LessonMaterial anchor;
 
     @Column(name = "question_text", nullable = false, columnDefinition = "TEXT")
     private String questionText;
@@ -79,7 +79,7 @@ public class QuizQuestion {
         this.lessonParagraph = lessonParagraph;
     }
 
-    public void updateAnchor(Lesson anchor) {
+    public void updateAnchor(LessonMaterial anchor) {
         this.anchor = anchor;
     }
 
