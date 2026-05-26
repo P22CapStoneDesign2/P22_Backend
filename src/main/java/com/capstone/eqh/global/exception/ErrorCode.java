@@ -43,7 +43,7 @@ public enum ErrorCode {
     // ── 404 Not Found ─────────────────────────────────────────────────
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."),
 
-    LESSON_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 교안입니다."),
+    
     PDF_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 PDF입니다."),
 
     LESSON_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 강의입니다."),
