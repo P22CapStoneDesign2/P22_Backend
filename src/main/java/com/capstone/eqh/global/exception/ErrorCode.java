@@ -16,7 +16,12 @@ public enum ErrorCode {
     INVALID_PASSWORD_FORMAT(HttpStatus.BAD_REQUEST, "비밀번호 형식이 올바르지 않습니다."),
     PASSWORD_CONFIRM_MISMATCH(HttpStatus.BAD_REQUEST, "비밀번호 확인이 일치하지 않습니다."),
     SOCIAL_CANNOT_CHANGE_PASSWORD(HttpStatus.BAD_REQUEST, "소셜 로그인 계정은 비밀번호를 변경할 수 없습니다."),
+
+    INVALID_PDF_TYPE(HttpStatus.BAD_REQUEST, "PDF 파일만 업로드할 수 있습니다."),
+    FILE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "파일 크기는 50MB를 초과할 수 없습니다."),
+
     ENROLLMENT_NOT_PENDING(HttpStatus.BAD_REQUEST, "대기 중인 신청이 아닙니다."),
+
 
     // ── 401 Unauthorized ──────────────────────────────────────────────
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "인증이 필요합니다."),
@@ -37,9 +42,14 @@ public enum ErrorCode {
 
     // ── 404 Not Found ─────────────────────────────────────────────────
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."),
+
+    LESSON_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 교안입니다."),
+    PDF_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 PDF입니다."),
+
     LESSON_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 강의입니다."),
     LESSON_MATERIAL_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 교안입니다."),
     LESSON_MATERIAL_NOT_IN_LESSON(HttpStatus.NOT_FOUND, "해당 강의에 속한 교안이 아닙니다."),
+
     QUIZ_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 퀴즈입니다."),
     QUIZ_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 문제입니다."),
     ENROLLMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "수강 신청을 찾을 수 없습니다."),
@@ -67,6 +77,8 @@ public enum ErrorCode {
     VERIFICATION_CODE_MISMATCH(HttpStatus.UNAUTHORIZED, "인증번호가 일치하지 않습니다."),
 
     // ── 500 Internal Server Error ─────────────────────────────────────
+    STORAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
+    STORAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 삭제에 실패했습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
 

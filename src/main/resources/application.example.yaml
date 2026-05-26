@@ -1,0 +1,16 @@
+spring:
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+# Supabase Storage (교안 PDF)
+# 환경 변수: SUPABASE_URL, SUPABASE_SERVICE_KEY, SUPABASE_BUCKET
+app:
+  supabase:
+    url: ${SUPABASE_URL:https://your-project.supabase.co}
+    service-key: ${SUPABASE_SERVICE_KEY:your-service-role-key}
+    bucket: ${SUPABASE_BUCKET:lesson-pdf}
+
+jwt:
+  secret: testtesttesttesttesttesttesttesttesttest
