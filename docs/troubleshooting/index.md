@@ -48,3 +48,4 @@
 | [lecture-material-missing-lesson-id.md](lecture-material-missing-lesson-id.md) | 강의/교안 분리 후 `lecture_material.lesson_id` 컬럼이 실제 테이블에 추가되지 않아 교안 생성 500. `ddl-auto: update`는 기존 행이 있는 테이블에 NOT NULL 컬럼을 추가하지 못함. `Quiz.material` FK 도 `lesson_material_id` 로 리네임 | 2026-05-25 |
 | [quiz-legacy-lesson-id-not-null.md](quiz-legacy-lesson-id-not-null.md) | `quiz.lesson_id` 가 RENAME 되지 않고 `lesson_material_id` 와 함께 NOT NULL 로 잔존해 `POST /api/quiz` 가 500. `DROP COLUMN` 으로 정리하고 마이그레이션 SQL 을 `src/main/resources/sql/migrations/` 에 커밋 | 2026-05-25 |
 | [request-body-missing-500.md](request-body-missing-500.md) | `HttpMessageNotReadableException` (body 누락·JSON 파싱 실패) 이 전용 핸들러 없어 catch-all 로 빠지면서 500 으로 응답되던 문제. `INVALID_REQUEST_BODY` (400) 핸들러 추가로 정정 | 2026-05-25 |
+| [flyway-v3-missing-migration.md](flyway-v3-missing-migration.md) | Supabase DB에 V3 마이그레이션 이력이 있지만 로컬 파일이 없어 `FlywayValidateException` 발생. `ignore-migration-patterns: "*:missing"` 으로 억제, V4로 소프트 삭제 컬럼 추가 | 2026-05-26 |

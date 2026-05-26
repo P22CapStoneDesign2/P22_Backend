@@ -9,6 +9,7 @@ import com.capstone.eqh.domain.lesson.entity.LessonMaterial;
 import com.capstone.eqh.domain.lesson.enums.EnrollmentStatus;
 import com.capstone.eqh.domain.lesson.repository.LessonEnrollmentRepository;
 import com.capstone.eqh.domain.lesson.repository.LessonMaterialRepository;
+import com.capstone.eqh.domain.quiz.repository.QuizRepository;
 import com.capstone.eqh.domain.user.entity.User;
 import com.capstone.eqh.domain.user.enums.Role;
 import com.capstone.eqh.domain.user.repository.UserRepository;
@@ -29,6 +30,7 @@ public class LessonMaterialService {
     private final LessonEnrollmentRepository enrollmentRepository;
     private final LessonService lessonService;
     private final UserRepository userRepository;
+    private final QuizRepository quizRepository;
 
     @Transactional
     public LessonMaterialResponseDto create(Long lessonId, LessonCreateRequestDto request, Long userId) {
@@ -78,7 +80,9 @@ public class LessonMaterialService {
 
     @Transactional
     public void delete(Long lessonId, Long materialId) {
-        materialRepository.delete(findMaterialInLesson(lessonId, materialId));
+        LessonMaterial material = findMaterialInLesson(lessonId, materialId);
+        quizRepository.deleteAll(quizRepository.findAllByMaterial_Id(materialId));
+        materialRepository.delete(material);
     }
 
     public boolean isOwner(Long materialId, Long userId) {

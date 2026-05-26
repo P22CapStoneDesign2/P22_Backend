@@ -67,10 +67,10 @@
 | Method | URL | 인증 | 권한 | 설명 |
 |--------|-----|------|------|------|
 | `POST` | `/api/lessons` | ✅ | PROF | 강의 생성 |
-| `GET` | `/api/lessons` | ✅ | 모두 | 강의 목록 조회 (페이지네이션) |
+| `GET` | `/api/lessons` | ✅ | 모두 | 강의 목록 조회 (페이지네이션) — PROF: 본인 생성 강의만, USER/ADMIN: 전체 |
 | `GET` | `/api/lessons/{lessonId}` | ✅ | 모두 | 강의 단건 조회 |
 | `PUT` | `/api/lessons/{lessonId}` | ✅ | PROF(본인)/ADMIN | 강의 수정 |
-| `DELETE` | `/api/lessons/{lessonId}` | ✅ | PROF(본인)/ADMIN | 강의 삭제 |
+| `DELETE` | `/api/lessons/{lessonId}` | ✅ | PROF(본인)/ADMIN | 강의 소프트 삭제 — 하위 교안·퀴즈 연쇄 소프트 삭제 |
 | `GET` | `/api/admin/lessons` | ✅ | ADMIN | 전체 강의 목록 조회 (페이지네이션) |
 | `GET` | `/api/lessons/my` | ✅ | USER | 학생 본인이 승인받은 강의 목록 |
 | `POST` | `/api/lessons/{lessonId}/enrollments` | ✅ | USER | 강의 수강 신청 |
@@ -87,7 +87,7 @@
 | `GET` | `/api/lessons/{lessonId}/materials` | ✅ | 모두 | 교안 목록 조회 (USER: 수강 승인된 강의만) |
 | `GET` | `/api/lessons/{lessonId}/materials/{materialId}` | ✅ | 모두 | 교안 단건 조회 |
 | `PUT` | `/api/lessons/{lessonId}/materials/{materialId}` | ✅ | PROF(본인)/ADMIN | 교안 수정 |
-| `DELETE` | `/api/lessons/{lessonId}/materials/{materialId}` | ✅ | PROF(본인)/ADMIN | 교안 삭제 |
+| `DELETE` | `/api/lessons/{lessonId}/materials/{materialId}` | ✅ | PROF(본인)/ADMIN | 교안 소프트 삭제 — 하위 퀴즈 연쇄 소프트 삭제 |
 
 ### 퀴즈
 

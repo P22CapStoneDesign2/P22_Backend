@@ -4,7 +4,10 @@ import com.capstone.eqh.domain.user.entity.User;
 import com.capstone.eqh.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +17,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+@SQLDelete(sql = "UPDATE lesson SET deleted = true, deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("deleted = false")
 public class Lesson extends BaseTimeEntity {
 
     @Id
@@ -33,6 +38,12 @@ public class Lesson extends BaseTimeEntity {
     @Builder.Default
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LessonMaterial> materials = new ArrayList<>();
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
+
+    private LocalDateTime deletedAt;
 
     public void update(String title, String description) {
         this.title = title;

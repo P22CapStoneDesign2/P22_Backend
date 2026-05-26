@@ -4,6 +4,7 @@ import com.capstone.eqh.domain.lesson.dto.request.LessonCreateRequestDto;
 import com.capstone.eqh.domain.lesson.dto.request.LessonUpdateRequestDto;
 import com.capstone.eqh.domain.lesson.dto.response.LessonResponseDto;
 import com.capstone.eqh.domain.lesson.service.LessonService;
+import com.capstone.eqh.domain.user.enums.Role;
 import com.capstone.eqh.global.common.ApiResponse;
 import com.capstone.eqh.global.security.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -37,9 +38,11 @@ public class LessonController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<LessonResponseDto>>> getAll(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        Role role = userDetails.getUser().getRole();
         return ResponseEntity.ok(ApiResponse.success(200, "강의 목록 조회 성공",
-                lessonService.getAll(pageable)));
+                lessonService.getAll(userDetails.getUserId(), role, pageable)));
     }
 
     @GetMapping("/{lessonId}")

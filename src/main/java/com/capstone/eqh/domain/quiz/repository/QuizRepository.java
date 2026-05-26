@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
+import java.util.List;
 
 public interface QuizRepository extends JpaRepository<Quiz, Long> {
 
@@ -16,4 +17,6 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
     Page<Quiz> findByMaterial_Id(Long materialId, Pageable pageable);
 
     Page<Quiz> findByMaterial_Lesson_IdIn(Collection<Long> lessonIds, Pageable pageable);
+
+    List<Quiz> findAllByMaterial_Id(Long materialId);
 }
