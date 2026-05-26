@@ -1,0 +1,31 @@
+# Gradle
+.gradle/
+build/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Local / secret config (keep example files)
+application-local.yaml
+application-local.yml
+.env
+.env.*
+
+# Java
+*.class
+hs_err_pid*

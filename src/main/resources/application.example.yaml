@@ -1,0 +1,38 @@
+spring:
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:your@gmail.com}
+    password: ${MAIL_PASSWORD:app-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+# Supabase Storage (교안 PDF)
+# 환경 변수: SUPABASE_URL, SUPABASE_SERVICE_KEY, SUPABASE_BUCKET
+app:
+  password-reset:
+    token-ttl-minutes: 30
+    resend-cooldown-seconds: 60
+    frontend-reset-url: http://localhost:5174/reset-password
+
+  supabase:
+    url: ${SUPABASE_URL:https://your-project.supabase.co}
+    service-key: ${SUPABASE_SERVICE_KEY:your-service-role-key}
+    bucket: ${SUPABASE_BUCKET:lesson-pdf}
+
+jwt:
+  secret: testtesttesttesttesttesttesttesttesttest
