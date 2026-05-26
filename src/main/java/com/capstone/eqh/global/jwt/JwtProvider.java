@@ -10,8 +10,8 @@ package com.capstone.eqh.global.jwt;
 import com.capstone.eqh.global.exception.CustomException;
 import com.capstone.eqh.global.exception.ErrorCode;
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import java.nio.charset.StandardCharsets;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -35,10 +35,8 @@ public class JwtProvider {
     private final SecretKey secretKey;
 
     public JwtProvider(@Value("${jwt.secret}") String secret) {
-    this.secretKey = Keys.hmacShaKeyFor(
-            secret.getBytes(StandardCharsets.UTF_8)
-    );
-}
+        this.secretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
+    }
 
     // -- 토큰 생성 ---------------------------------------------------
     public String generateAccessToken(Long userId, String role) {
