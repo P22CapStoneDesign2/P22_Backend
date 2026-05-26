@@ -35,6 +35,10 @@ public class Lesson extends BaseTimeEntity {
     @JoinColumn(name = "professor_id")
     private User createdBy;
 
+    @OneToMany(mappedBy = "lesson")
+    @Builder.Default
+    private List<LessonPdf> pdfs = new ArrayList<>();
+
     @Builder.Default
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LessonMaterial> materials = new ArrayList<>();
