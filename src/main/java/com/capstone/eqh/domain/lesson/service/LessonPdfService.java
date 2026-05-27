@@ -2,8 +2,8 @@ package com.capstone.eqh.domain.lesson.service;
 
 import com.capstone.eqh.domain.lesson.dto.response.LessonPdfResponseDto;
 import com.capstone.eqh.domain.lesson.entity.Lesson;
-import com.capstone.eqh.domain.lesson.entity.LessonPdf;
-import com.capstone.eqh.domain.lesson.repository.LessonPdfRepository;
+import com.capstone.eqh.domain.material.entity.Material;
+import com.capstone.eqh.domain.material.repository.MaterialRepository;
 import com.capstone.eqh.domain.lesson.repository.LessonRepository;
 import com.capstone.eqh.domain.user.entity.User;
 import com.capstone.eqh.domain.user.repository.UserRepository;
@@ -30,7 +30,7 @@ public class LessonPdfService {
     private static final String PDF_EXTENSION = ".pdf";
     private static final String PDF_CONTENT_TYPE = "application/pdf";
 
-    private final LessonPdfRepository lessonPdfRepository;
+    private final MaterialRepository materialRepository;
     private final LessonRepository lessonRepository;
     private final UserRepository userRepository;
     private final SupabaseStorageService supabaseStorageService;
@@ -49,42 +49,43 @@ public class LessonPdfService {
         supabaseStorageService.upload(storagePath, content, PDF_CONTENT_TYPE);
         String fileUrl = supabaseStorageService.getPublicUrl(storagePath);
 
-        LessonPdf lessonPdf = LessonPdf.builder()
+        Material material = Material.builder()
                 .lesson(lesson)
+                .title(originalFileName)
                 .originalFileName(originalFileName)
                 .savedFileName(savedFileName)
                 .storagePath(storagePath)
-                .fileUrl(fileUrl)
+                .pdfUrl(fileUrl)
                 .fileSize(file.getSize())
                 .uploadedBy(uploader)
                 .build();
 
-        return LessonPdfResponseDto.from(lessonPdfRepository.save(lessonPdf));
+        return LessonPdfResponseDto.from(materialRepository.save(material));
     }
 
     @Transactional
     public void deletePdf(Long pdfId) {
-        LessonPdf lessonPdf = findPdfById(pdfId);
-        supabaseStorageService.delete(lessonPdf.getStoragePath());
-        lessonPdfRepository.delete(lessonPdf);
+        Material material = findPdfById(pdfId);
+        supabaseStorageService.delete(material.getStoragePath());
+        materialRepository.delete(material);
     }
 
     public List<LessonPdfResponseDto> getPdfList(Long lessonId) {
         findLessonById(lessonId);
-        return lessonPdfRepository.findByLessonId(lessonId).stream()
+        return materialRepository.findByLesson_IdOrderByCreatedAtDesc(lessonId).stream()
                 .map(LessonPdfResponseDto::from)
                 .toList();
     }
 
     public boolean isUploader(Long pdfId, Long userId) {
-        return lessonPdfRepository.findById(pdfId)
+        return materialRepository.findById(pdfId)
                 .map(pdf -> isUploader(pdf, userId))
                 .orElse(false);
     }
 
-    private boolean isUploader(LessonPdf lessonPdf, Long userId) {
-        return lessonPdf.getUploadedBy() != null
-                && lessonPdf.getUploadedBy().getId().equals(userId);
+    private boolean isUploader(Material material, Long userId) {
+        return material.getUploadedBy() != null
+                && material.getUploadedBy().getId().equals(userId);
     }
 
     private void validatePdfFile(MultipartFile file) {
@@ -135,8 +136,8 @@ public class LessonPdfService {
                 .orElseThrow(() -> new CustomException(ErrorCode.LESSON_NOT_FOUND));
     }
 
-    private LessonPdf findPdfById(Long pdfId) {
-        return lessonPdfRepository.findById(pdfId)
+    private Material findPdfById(Long pdfId) {
+        return materialRepository.findById(pdfId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PDF_NOT_FOUND));
     }
 

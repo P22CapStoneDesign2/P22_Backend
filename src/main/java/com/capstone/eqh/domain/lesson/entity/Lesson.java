@@ -1,5 +1,6 @@
 package com.capstone.eqh.domain.lesson.entity;
 
+import com.capstone.eqh.domain.material.entity.Material;
 import com.capstone.eqh.domain.user.entity.User;
 import com.capstone.eqh.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
@@ -37,7 +38,7 @@ public class Lesson extends BaseTimeEntity {
 
     @OneToMany(mappedBy = "lesson")
     @Builder.Default
-    private List<LessonPdf> pdfs = new ArrayList<>();
+    private List<Material> pdfs = new ArrayList<>();
 
     @Builder.Default
     @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL, orphanRemoval = true)

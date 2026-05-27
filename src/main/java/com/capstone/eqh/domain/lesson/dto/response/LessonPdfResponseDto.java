@@ -1,6 +1,6 @@
 package com.capstone.eqh.domain.lesson.dto.response;
 
-import com.capstone.eqh.domain.lesson.entity.LessonPdf;
+import com.capstone.eqh.domain.material.entity.Material;
 
 import java.time.LocalDateTime;
 
@@ -14,16 +14,16 @@ public record LessonPdfResponseDto(
         Long uploadedById,
         LocalDateTime uploadedAt
 ) {
-    public static LessonPdfResponseDto from(LessonPdf lessonPdf) {
+    public static LessonPdfResponseDto from(Material material) {
         return new LessonPdfResponseDto(
-                lessonPdf.getId(),
-                lessonPdf.getLesson().getId(),
-                lessonPdf.getOriginalFileName(),
-                lessonPdf.getSavedFileName(),
-                lessonPdf.getFileUrl(),
-                lessonPdf.getFileSize(),
-                lessonPdf.getUploadedBy().getId(),
-                lessonPdf.getCreatedAt()
+                material.getId(),
+                material.getLesson().getId(),
+                material.getOriginalFileName(),
+                material.getSavedFileName(),
+                material.getPdfUrl(),
+                material.getFileSize(),
+                material.getUploadedBy().getId(),
+                material.getCreatedAt()
         );
     }
 }
