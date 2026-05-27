@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?user=postgres.xmvughovslruwerrmvir&password=p22capstonedesign
+    url: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?user=postgres.xmvughovslruwerrmvir&password=p22capstonedesign&prepareThreshold=0
     username: postgres.xmvughovslruwerrmvir
     password: p22capstonedesign
     driver-class-name: org.postgresql.Driver
@@ -26,6 +26,8 @@ spring:
           auth: true
           starttls:
             enable: true
+  flyway:
+    url: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?user=postgres.xmvughovslruwerrmvir&password=p22capstonedesign&prepareThreshold=0
             
   servlet:
     multipart:
