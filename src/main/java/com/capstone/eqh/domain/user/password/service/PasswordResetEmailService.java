@@ -28,7 +28,7 @@ public class PasswordResetEmailService {
      * @param token   URL에 포함할 원문 토큰(UUID)
      */
     public void sendPasswordResetLink(String toEmail, String token) {
-        String resetLink = buildResetLink(token);
+        String resetLink = buildResetLink(token, toEmail);
 
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(toEmail);
@@ -59,11 +59,11 @@ public class PasswordResetEmailService {
         }
     }
 
-    private String buildResetLink(String token) {
+    private String buildResetLink(String token, String email) {
         String base = properties.getFrontendResetUrl();
         if (base.contains("?")) {
-            return base + "&token=" + token;
+            return base + "&token=" + token + "&email=" + email;
         }
-        return base + "?token=" + token;
+        return base + "?token=" + token + "&email=" + email;
     }
 }

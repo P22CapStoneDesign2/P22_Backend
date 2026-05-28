@@ -32,6 +32,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private static final String[] PUBLIC_PATH_PREFIXES = {
             "/api/auth/",
+            "/api/v1/auth/password/",
             "/oauth2/",
             "/login/oauth2/"
     };
