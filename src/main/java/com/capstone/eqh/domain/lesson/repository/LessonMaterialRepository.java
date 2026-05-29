@@ -4,6 +4,7 @@ import com.capstone.eqh.domain.lesson.entity.LessonMaterial;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.Optional;
 
 import java.util.List;
 
@@ -12,4 +13,6 @@ public interface LessonMaterialRepository extends JpaRepository<LessonMaterial, 
     Page<LessonMaterial> findAllByLessonId(Long lessonId, Pageable pageable);
 
     List<LessonMaterial> findAllByLessonId(Long lessonId);
+
+    Optional<LessonMaterial> findByLessonId(Long lessonId); 
 }
