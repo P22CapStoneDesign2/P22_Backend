@@ -40,6 +40,9 @@ public class CustomOidcUserService extends OidcUserService {
 
         if (existing.isPresent()) {
             User user = existing.get();
+
+            log.info("카카오 providerId: {}", userInfo.getId());
+            
             return new CustomOidcUser(oidcUser, Map.of(
                     "isNewUser",   false,
                     "dbUserId",    user.getId(),
