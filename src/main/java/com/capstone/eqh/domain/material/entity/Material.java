@@ -71,7 +71,7 @@ public class Material extends BaseTimeEntity {
     private boolean allowDownload = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "uploaded_by", nullable = false)
+    @JoinColumn(name = "uploaded_by", nullable = true)
     private User uploadedBy;
 
     public Long getLectureId() {

@@ -33,9 +33,10 @@ public class LessonPdfController {
     public ResponseEntity<ApiResponse<LessonPdfResponseDto>> uploadPdf(
             @PathVariable Long lessonId,
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestPart("file") MultipartFile file) {
+            @RequestPart("file") MultipartFile file,
+            @RequestPart("title") String title) { 
         LessonPdfResponseDto response = lessonPdfService.uploadPdf(
-                lessonId, file, userDetails.getUserId());
+                lessonId, file, userDetails.getUserId(), title);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(201, "PDF 업로드 성공", response));
     }

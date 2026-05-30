@@ -33,6 +33,9 @@ public class LessonMaterial extends BaseTimeEntity {
     @Column(name = "content", columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "file_url", length = 255)  // 추가
+    private String fileUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "professor_id")
     private User createdBy;
