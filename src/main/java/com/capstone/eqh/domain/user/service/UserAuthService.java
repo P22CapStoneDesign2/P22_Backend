@@ -2,8 +2,11 @@ package com.capstone.eqh.domain.user.service;
 
 import com.capstone.eqh.domain.user.dto.request.LoginRequestDto;
 import com.capstone.eqh.domain.user.dto.request.LogoutRequestDto;
+import com.capstone.eqh.domain.user.dto.request.ProfSignupRequestDto;
 import com.capstone.eqh.domain.user.dto.request.ReissueRequestDto;
+import com.capstone.eqh.domain.user.dto.request.UserSocialSignupRequestDto;
 import com.capstone.eqh.domain.user.dto.response.AuthResponseDto;
+import com.capstone.eqh.domain.user.enums.AuthProvider;
 import com.capstone.eqh.domain.user.entity.RefreshToken;
 import com.capstone.eqh.domain.user.entity.User;
 import com.capstone.eqh.domain.user.enums.AuthProvider;
@@ -30,6 +33,7 @@ public class UserAuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtProvider jwtProvider;
+    private final UserSignupService userSignupService;
 
     @Transactional
     public AuthResponseDto login(LoginRequestDto request) {
@@ -79,6 +83,33 @@ public class UserAuthService {
         stored.updateToken(newRefreshToken, toLocalDateTime(jwtProvider.getExpiration(newRefreshToken)));
 
         return new AuthResponseDto(newAccessToken, newRefreshToken);
+    }
+
+    @Transactional
+    public AuthResponseDto profSignup(ProfSignupRequestDto request) {
+        User user = userSignupService.profSignup(request);
+
+        String accessToken = jwtProvider.generateAccessToken(user.getId(), user.getRole().name());
+        String refreshToken = jwtProvider.generateRefreshToken(user.getId());
+        saveOrUpdateRefreshToken(user.getId(), refreshToken);
+
+        return new AuthResponseDto(accessToken, refreshToken, user.getStatus());
+    }
+
+    @Transactional
+    public AuthResponseDto completeSocialSignup(UserSocialSignupRequestDto request) {
+        var claims = jwtProvider.getPendingTokenClaims(request.pendingToken());
+        String providerId = claims.get("providerId");
+        AuthProvider provider = AuthProvider.valueOf(claims.get("provider"));
+
+        User user = userSignupService.completeSocialSignup(
+                providerId, provider,
+                request.username(), request.email(), request.nickname());
+
+        String accessToken  = jwtProvider.generateAccessToken(user.getId(), user.getRole().name());
+        String refreshToken = jwtProvider.generateRefreshToken(user.getId());
+        saveOrUpdateRefreshToken(user.getId(), refreshToken);
+        return new AuthResponseDto(accessToken, refreshToken);
     }
 
     @Transactional

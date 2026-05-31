@@ -30,16 +30,42 @@ public class JwtFilter extends OncePerRequestFilter {
     private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 
+    private static final String[] PUBLIC_PATH_PREFIXES = {
+            "/api/auth/",
+            "/api/v1/auth/password/",
+            "/oauth2/",
+            "/login/oauth2/"
+    };
+
     private final JwtProvider jwtProvider;
     private final CustomUserDetailsService userDetailsService;
     private final ObjectMapper objectMapper;
+
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String path = request.getServletPath();
+        for (String prefix : PUBLIC_PATH_PREFIXES) {
+            if (path.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain filterChain) throws ServletException, IOException {
 
+        String rawHeader = request.getHeader(AUTHORIZATION_HEADER);
         String token = resolveToken(request);
+
+        log.debug("[JwtFilter] {} {} | servletPath={} | hdr={} | resolved={}",
+                request.getMethod(), request.getRequestURI(), request.getServletPath(),
+                rawHeader == null ? "null"
+                        : "len=" + rawHeader.length() + " prefix7=\""
+                        + rawHeader.substring(0, Math.min(7, rawHeader.length())) + "\"",
+                token != null);
 
         if (token == null) {
             filterChain.doFilter(request, response);
@@ -57,9 +83,14 @@ public class JwtFilter extends OncePerRequestFilter {
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            log.debug("[JwtFilter] auth set userId={} authorities={}", userId, userDetails.getAuthorities());
         } catch (CustomException e) {
+            log.warn("[JwtFilter] CustomException {} - {}", e.getErrorCode(), e.getMessage());
             sendErrorResponse(response, e.getErrorCode());
             return;
+        } catch (Exception e) {
+            log.error("[JwtFilter] Unexpected exception", e);
+            throw e;
         }
 
         filterChain.doFilter(request, response);

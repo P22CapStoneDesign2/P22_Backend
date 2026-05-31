@@ -4,10 +4,16 @@ spring:
       on-profile: local
 
   datasource:
-    url: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:5432/postgres?user=postgres.xmvughovslruwerrmvir&password=p22capstonedesign
+    url: jdbc:postgresql://aws-1-ap-northeast-2.pooler.supabase.com:6543/postgres?pgbouncer=true&prepareThreshold=0
     username: postgres.xmvughovslruwerrmvir
     password: p22capstonedesign
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5        # 기본 10 → 5로 줄이기
+      minimum-idle: 2
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 600000
 
   jpa:
     hibernate:
@@ -18,13 +24,31 @@ spring:
         format_sql: true
     show-sql: true
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2s
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:jihung955@gmail.com}
+    password: ${MAIL_PASSWORD:fjyo fxch ryus rybt}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
   security:
     oauth2:
       client:
         registration:
           kakao:
-            client-id: a757b9590ce8d1ed31874f6747a52906
-            client-secret: 7iMUrxvjy9Tiafb2x1tFR0vt8THAJOQy
+            client-id: 7a100fee51667fd857bc86a314bbc543
+            client-secret: ScHolI34QmynHsrVrsZbWm3IkCrTLdCp
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
@@ -43,12 +67,26 @@ server:
   port: 8080
 
 jwt:
-  # Base64 인코딩된 256비트 이상 키 (로컬 개발용 — 실제 배포 시 교체 필수)
-  secret: bG9jYWwtZGV2LXNlY3JldC1rZXktZm9yLWVxaC1iYWNrZW5kLWp3dC1taW5pbXVtLTI1Ni1iaXRz
-
+  # (로컬 개발용 — 실제 배포 시 교체 필수)
+  secret: eznHPpYI/9FkNLt1ngJQTxaFfjePbMjqghP2e2fVrUE=
 app:
   oauth2:
     redirect-uri: http://localhost:5174/oauth2/callback
+    register-uri: http://localhost:5174/oauth2/register
+  password-reset:
+    token-ttl-minutes: 30
+    resend-cooldown-seconds: 60
+    frontend-reset-url: http://localhost:5174/reset-password
+
+  email-verification:
+    code-ttl-seconds: 300
+    resend-cooldown-seconds: 60
+    max-sends-per-hour: 5
+    send-window-seconds: 3600
+    max-verify-attempts: 5
+    lock-duration-seconds: 900
+    verified-ttl-seconds: 1800
+    hmac-secret: ${EMAIL_VERIFY_HMAC_SECRET:dev-hmac-secret-change-me}
 
 logging:
   level:

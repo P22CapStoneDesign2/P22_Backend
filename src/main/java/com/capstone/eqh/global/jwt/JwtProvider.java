@@ -19,14 +19,18 @@ import org.springframework.beans.factory.annotation.Value;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.Map;
+
+
 
 @Slf4j
 @Component
 public class JwtProvider {
-    // 30분
-    private static final long ACCESS_TOKEN_VALIDITY_MS = 1000L * 60 * 30;
-    // 7일
-    private static final long REFRESH_TOKEN_VALIDITY_MS = 1000L * 60 * 30 * 24 * 7;
+    private static final long ACCESS_TOKEN_VALIDITY_MS  = 1000L * 60 * 30;
+    private static final long REFRESH_TOKEN_VALIDITY_MS = 1000L * 60 * 60 * 24 * 7;
+    private static final long PENDING_TOKEN_VALIDITY_MS = 1000L * 60 * 10;
+
+    private static final String PENDING_TYPE = "PENDING_SOCIAL";
 
     private final SecretKey secretKey;
 
@@ -38,8 +42,39 @@ public class JwtProvider {
     public String generateAccessToken(Long userId, String role) {
         return buildToken(String.valueOf(userId), role, ACCESS_TOKEN_VALIDITY_MS);
     }
+
     public String generateRefreshToken(Long userId) {
         return buildToken(String.valueOf(userId), null, REFRESH_TOKEN_VALIDITY_MS);
+    }
+
+    public String generatePendingToken(String providerId, String provider, String name) {
+        Date now = new Date();
+        return Jwts.builder()
+                .subject(providerId)
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + PENDING_TOKEN_VALIDITY_MS))
+                .claim("type", PENDING_TYPE)
+                .claim("provider", provider)
+                .claim("name", name != null ? name : "")
+                .signWith(secretKey)
+                .compact();
+    }
+
+    public Map<String, String> getPendingTokenClaims(String token) {
+        Claims claims;
+        try {
+            claims = parseClaims(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            throw new CustomException(ErrorCode.INVALID_PENDING_TOKEN);
+        }
+        if (!PENDING_TYPE.equals(claims.get("type", String.class))) {
+            throw new CustomException(ErrorCode.INVALID_PENDING_TOKEN);
+        }
+        return Map.of(
+                "providerId", claims.getSubject(),
+                "provider",   claims.get("provider", String.class),
+                "name",       claims.get("name", String.class)
+        );
     }
 
     private String buildToken(String subject, String role, long validityMs) {

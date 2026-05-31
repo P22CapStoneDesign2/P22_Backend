@@ -7,3 +7,6 @@
 |------|------|------------|------|
 | [auth-flow.md](auth-flow.md) | ✅ 확정 | user, global | JWT + Kakao OAuth2 인증 흐름, Refresh Token Rotation |
 | [rbac-model.md](rbac-model.md) | ✅ 확정 | 전체 | PROF/USER/ADMIN 권한 체계, @PreAuthorize 패턴 |
+| [signup-role-separation.md](signup-role-separation.md) | ✅ 확정 | user, global.oauth2, global.jwt | PROF 로컬 가입 / USER 카카오 가입 분리, pending 토큰 흐름 |
+| [email-verification.md](email-verification.md) | ✅ 확정 | user, global.config | PROF 회원가입 전 이메일 인증, Redis TTL 기반 상태, HMAC-SHA256 코드 해시 |
+| [db-migration.md](db-migration.md) | ✅ 확정 | 전체 (DB 스키마) | Flyway baseline 도입 + `ddl-auto: validate` 고정, `db/migration/V{n}__*.sql` 진본 |

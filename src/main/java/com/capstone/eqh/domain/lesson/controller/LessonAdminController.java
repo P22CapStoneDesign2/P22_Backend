@@ -2,6 +2,7 @@ package com.capstone.eqh.domain.lesson.controller;
 
 import com.capstone.eqh.domain.lesson.dto.response.LessonResponseDto;
 import com.capstone.eqh.domain.lesson.service.LessonService;
+import com.capstone.eqh.domain.user.enums.Role;
 import com.capstone.eqh.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,6 +24,6 @@ public class LessonAdminController {
     @GetMapping
     public ResponseEntity<ApiResponse<Page<LessonResponseDto>>> getAllForAdmin(
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(ApiResponse.success(200, "전체 교안 목록 조회 성공", lessonService.getAll(pageable)));
+        return ResponseEntity.ok(ApiResponse.success(200, "전체 강의 목록 조회 성공", lessonService.getAll(null, Role.ADMIN, pageable)));
     }
 }

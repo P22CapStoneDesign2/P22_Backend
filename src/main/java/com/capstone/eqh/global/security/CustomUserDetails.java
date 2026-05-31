@@ -1,6 +1,7 @@
 package com.capstone.eqh.global.security;
 
 import com.capstone.eqh.domain.user.entity.User;
+import com.capstone.eqh.domain.user.enums.UserStatus;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
@@ -18,6 +19,10 @@ public class CustomUserDetails implements UserDetails {
 
     public Long getUserId() {
         return user.getId();
+    }
+
+    public boolean isActive() {
+        return user.getStatus() == UserStatus.ACTIVE;
     }
 
     @Override

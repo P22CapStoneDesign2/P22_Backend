@@ -4,6 +4,7 @@ import com.capstone.eqh.domain.lesson.dto.request.LessonCreateRequestDto;
 import com.capstone.eqh.domain.lesson.dto.request.LessonUpdateRequestDto;
 import com.capstone.eqh.domain.lesson.dto.response.LessonResponseDto;
 import com.capstone.eqh.domain.lesson.service.LessonService;
+import com.capstone.eqh.domain.user.enums.Role;
 import com.capstone.eqh.global.common.ApiResponse;
 import com.capstone.eqh.global.security.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -26,38 +27,43 @@ public class LessonController {
     private final LessonService lessonService;
 
     @PostMapping
-    @PreAuthorize("hasRole('PROF')")
+    @PreAuthorize("hasRole('PROF') and principal.active")
     public ResponseEntity<ApiResponse<LessonResponseDto>> create(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody LessonCreateRequestDto request) {
-        LessonResponseDto response = lessonService.create(request, userDetails.getUserId());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(201, "교안 생성 성공", response));
+                .body(ApiResponse.success(201, "강의 생성 성공",
+                        lessonService.create(request, userDetails.getUserId())));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<Page<LessonResponseDto>>> getAll(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(ApiResponse.success(200, "교안 목록 조회 성공", lessonService.getAll(pageable)));
+        Role role = userDetails.getUser().getRole();
+        return ResponseEntity.ok(ApiResponse.success(200, "강의 목록 조회 성공",
+                lessonService.getAll(userDetails.getUserId(), role, pageable)));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<LessonResponseDto>> getOne(@PathVariable Long id) {
-        return ResponseEntity.ok(ApiResponse.success(200, "교안 조회 성공", lessonService.getOne(id)));
+    @GetMapping("/{lessonId}")
+    public ResponseEntity<ApiResponse<LessonResponseDto>> getOne(@PathVariable Long lessonId) {
+        return ResponseEntity.ok(ApiResponse.success(200, "강의 조회 성공",
+                lessonService.getOne(lessonId)));
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("(hasRole('PROF') and @lessonService.isOwner(#id, principal.userId)) or hasRole('ADMIN')")
+    @PutMapping("/{lessonId}")
+    @PreAuthorize("(hasRole('PROF') and principal.active and @lessonService.isOwner(#lessonId, principal.userId)) or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<LessonResponseDto>> update(
-            @PathVariable Long id,
+            @PathVariable Long lessonId,
             @Valid @RequestBody LessonUpdateRequestDto request) {
-        return ResponseEntity.ok(ApiResponse.success(200, "교안 수정 성공", lessonService.update(id, request)));
+        return ResponseEntity.ok(ApiResponse.success(200, "강의 수정 성공",
+                lessonService.update(lessonId, request)));
     }
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("(hasRole('PROF') and @lessonService.isOwner(#id, principal.userId)) or hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
-        lessonService.delete(id);
-        return ResponseEntity.ok(ApiResponse.success("교안 삭제 성공"));
+    @DeleteMapping("/{lessonId}")
+    @PreAuthorize("(hasRole('PROF') and principal.active and @lessonService.isOwner(#lessonId, principal.userId)) or hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long lessonId) {
+        lessonService.delete(lessonId);
+        return ResponseEntity.ok(ApiResponse.success("강의 삭제 성공"));
     }
 }

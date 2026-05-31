@@ -3,6 +3,7 @@ package com.capstone.eqh.domain.user.service;
 import com.capstone.eqh.domain.user.dto.request.LoginRequestDto;
 import com.capstone.eqh.domain.user.dto.request.LogoutRequestDto;
 import com.capstone.eqh.domain.user.dto.request.ReissueRequestDto;
+import com.capstone.eqh.domain.user.dto.request.UserSocialSignupRequestDto;
 import com.capstone.eqh.domain.user.dto.response.AuthResponseDto;
 import com.capstone.eqh.domain.user.entity.RefreshToken;
 import com.capstone.eqh.domain.user.entity.User;
@@ -24,6 +25,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,6 +34,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,6 +44,7 @@ class UserAuthServiceTest {
     @Mock RefreshTokenRepository refreshTokenRepository;
     @Mock PasswordEncoder passwordEncoder;
     @Mock JwtProvider jwtProvider;
+    @Mock UserSignupService userSignupService;
     @InjectMocks UserAuthService userAuthService;
 
     private User createUser(Long id, AuthProvider provider) {
@@ -226,5 +230,48 @@ class UserAuthServiceTest {
         userAuthService.logout(request);
 
         verify(refreshTokenRepository, never()).delete(any(RefreshToken.class));
+    }
+
+    @Test
+    @DisplayName("completeSocialSignup 성공: UserSignupService 위임 후 JWT 발급 + RefreshToken 저장")
+    void completeSocialSignup_success() {
+        UserSocialSignupRequestDto request = new UserSocialSignupRequestDto(
+                "pending-token", "김학생", "student@gmail.com", "studyking");
+        User user = createUser(7L, AuthProvider.KAKAO);
+
+        when(jwtProvider.getPendingTokenClaims("pending-token")).thenReturn(Map.of(
+                "providerId", "kakao-123",
+                "provider", "KAKAO",
+                "name", "기존이름"));
+        when(userSignupService.completeSocialSignup(
+                "kakao-123", AuthProvider.KAKAO,
+                "김학생", "student@gmail.com", "studyking")).thenReturn(user);
+        when(jwtProvider.generateAccessToken(7L, "USER")).thenReturn("access");
+        when(jwtProvider.generateRefreshToken(7L)).thenReturn("refresh");
+        when(jwtProvider.getExpiration("refresh"))
+                .thenReturn(new Date(System.currentTimeMillis() + 100_000));
+        when(refreshTokenRepository.findByUserId(7L)).thenReturn(Optional.empty());
+
+        AuthResponseDto result = userAuthService.completeSocialSignup(request);
+
+        assertThat(result.accessToken()).isEqualTo("access");
+        assertThat(result.refreshToken()).isEqualTo("refresh");
+        verify(refreshTokenRepository).save(any(RefreshToken.class));
+    }
+
+    @Test
+    @DisplayName("completeSocialSignup 실패: pending 토큰이 INVALID_PENDING_TOKEN이면 UserSignupService 미호출")
+    void completeSocialSignup_invalidPendingToken() {
+        UserSocialSignupRequestDto request = new UserSocialSignupRequestDto(
+                "bad-token", "김학생", "student@gmail.com", "studyking");
+        when(jwtProvider.getPendingTokenClaims("bad-token"))
+                .thenThrow(new CustomException(ErrorCode.INVALID_PENDING_TOKEN));
+
+        assertThatThrownBy(() -> userAuthService.completeSocialSignup(request))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.INVALID_PENDING_TOKEN);
+        verifyNoInteractions(userSignupService);
+        verify(refreshTokenRepository, never()).save(any(RefreshToken.class));
     }
 }
