@@ -64,13 +64,14 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         getRedirectStrategy().sendRedirect(request, response, url);
     }
 
-    private void redirectExistingUser(HttpServletRequest request,
-                                       HttpServletResponse response,
-                                       OAuth2User oAuth2User) throws IOException {
+    private void redirectExistingUser(HttpServletRequest request,HttpServletResponse response, OAuth2User oAuth2User) throws IOException {
+        
         Long userId = ((Number) oAuth2User.getAttributes().get("dbUserId")).longValue();
         String role = (String) oAuth2User.getAttributes().get("dbUserRole");
 
         String[] tokens = userAuthService.issueTokenPair(userId, role);
+
+        log.info("🔑 accessToken: {}", tokens[0]);
 
         String url = UriComponentsBuilder.fromUriString(redirectUri)
                 .queryParam("accessToken", tokens[0])

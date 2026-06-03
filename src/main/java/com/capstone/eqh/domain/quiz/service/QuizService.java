@@ -20,6 +20,7 @@ import com.capstone.eqh.domain.quiz.entity.QuizOption;
 import com.capstone.eqh.domain.quiz.entity.QuizQuestion;
 import com.capstone.eqh.domain.quiz.entity.QuizSubmission;
 import com.capstone.eqh.domain.quiz.entity.QuizSubmissionAnswer;
+import com.capstone.eqh.domain.quiz.enums.QuizType;
 import com.capstone.eqh.domain.quiz.repository.QuizQuestionRepository;
 import com.capstone.eqh.domain.quiz.repository.QuizRepository;
 import com.capstone.eqh.domain.quiz.repository.QuizSubmissionAnswerRepository;
@@ -80,7 +81,7 @@ public class QuizService {
         return QuizDetailResponseDto.from(quiz);
     }
 
-    public Page<QuizResponseDto> getAll(Long userId, Role role, Long materialId, Pageable pageable) {
+    public Page<QuizResponseDto> getAll(Long userId, Role role, Long materialId, Long lessonId, Pageable pageable) {
         Page<Quiz> quizzes = switch (role) {
             case PROF -> (materialId == null)
                     ? quizRepository.findByProfessor_Id(userId, pageable)
@@ -88,26 +89,33 @@ public class QuizService {
             case ADMIN -> (materialId == null)
                     ? quizRepository.findAll(pageable)
                     : quizRepository.findByMaterial_Id(materialId, pageable);
-            case USER -> findQuizzesForStudent(userId, materialId, pageable);
+            case USER -> findQuizzesForStudent(userId, materialId, lessonId, pageable);
         };
         return quizzes.map(QuizResponseDto::from);
     }
 
-    private Page<Quiz> findQuizzesForStudent(Long studentId, Long materialId, Pageable pageable) {
-        if (materialId != null) {
-            LessonMaterial material = materialRepository.findById(materialId).orElse(null);
-            if (material == null) return new PageImpl<>(List.of(), pageable, 0);
-            Long lessonId = material.getLesson().getId();
-            boolean approved = enrollmentRepository.existsByLessonIdAndStudentIdAndStatus(
-                    lessonId, studentId, EnrollmentStatus.APPROVED);
-            if (!approved) return new PageImpl<>(List.of(), pageable, 0);
-            return quizRepository.findByMaterial_Id(materialId, pageable);
-        }
-        List<Long> approvedLessonIds = enrollmentRepository.findLessonIdsByStudentIdAndStatus(
-                studentId, EnrollmentStatus.APPROVED);
-        if (approvedLessonIds.isEmpty()) return new PageImpl<>(List.of(), pageable, 0);
-        return quizRepository.findByMaterial_Lesson_IdIn(approvedLessonIds, pageable);
+    private Page<Quiz> findQuizzesForStudent(Long studentId, Long materialId, Long lessonId, Pageable pageable) {
+    if (materialId != null) {
+        LessonMaterial material = materialRepository.findById(materialId).orElse(null);
+        if (material == null) return new PageImpl<>(List.of(), pageable, 0);
+        Long lid = material.getLesson().getId();
+        boolean approved = enrollmentRepository.existsByLessonIdAndStudentIdAndStatus(
+                lid, studentId, EnrollmentStatus.APPROVED);
+        if (!approved) return new PageImpl<>(List.of(), pageable, 0);
+        return quizRepository.findByMaterial_Id(materialId, pageable);
     }
+    if (lessonId != null) {
+        boolean approved = enrollmentRepository.existsByLessonIdAndStudentIdAndStatus(
+                lessonId, studentId, EnrollmentStatus.APPROVED);
+        if (!approved) return new PageImpl<>(List.of(), pageable, 0);
+        return quizRepository.findByMaterial_Lesson_IdIn(List.of(lessonId), pageable);
+    }
+    List<Long> approvedLessonIds = enrollmentRepository.findLessonIdsByStudentIdAndStatus(
+            studentId, EnrollmentStatus.APPROVED);
+    if (approvedLessonIds.isEmpty()) return new PageImpl<>(List.of(), pageable, 0);
+    return quizRepository.findByMaterial_Lesson_IdIn(approvedLessonIds, pageable);
+}
+        
 
     public QuizDetailResponseDto getOne(Long quizId, Long userId, Role role) {
         Quiz quiz = findQuizById(quizId);
@@ -154,16 +162,7 @@ public class QuizService {
 
         QuizQuestion saved = questionRepository.save(question);
 
-        if (request.options() != null && !request.options().isEmpty()) {
-            List<QuizOption> options = request.options().stream()
-                    .map(opt -> QuizOption.builder()
-                            .question(saved)
-                            .optionText(opt.optionText())
-                            .correct(opt.correct())
-                            .build())
-                    .collect(Collectors.toList());
-            saved.replaceOptions(options);
-        }
+        applyOptionsOnCreate(saved, request.questionType(), request.options());
 
         return saved;
     }
@@ -175,20 +174,14 @@ public class QuizService {
         QuizQuestion question = questionRepository.findByIdAndQuiz(questionId, quiz)
                 .orElseThrow(() -> new CustomException(ErrorCode.QUIZ_QUESTION_NOT_FOUND));
 
+        QuizType previousType = question.getQuestionType();
+        QuizType newType = resolveQuestionTypeForUpdate(request, question);
+
         question.update(request.questionText(), request.correctAnswer(), request.explanation(),
                 request.score(), request.lessonPage(), request.lessonParagraph());
         question.updateAnchor(resolveAnchor(request.anchorId()));
-
-        if (request.options() != null) {
-            List<QuizOption> options = request.options().stream()
-                    .map(opt -> QuizOption.builder()
-                            .question(question)
-                            .optionText(opt.optionText())
-                            .correct(opt.correct())
-                            .build())
-                    .collect(Collectors.toList());
-            question.replaceOptions(options);
-        }
+        question.updateQuestionType(newType);
+        applyOptionsOnUpdate(question, previousType, newType, request.options());
 
         return QuizQuestionResponseDto.from(question);
     }
@@ -275,6 +268,62 @@ public class QuizService {
     private User findUserById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    /**
+     * 수정 요청에서 questionType이 없을 때:
+     * - options가 빈 배열이면 단답형
+     * - options에 보기가 있으면 객관식
+     * - 둘 다 없으면 기존 유형 유지
+     */
+    private QuizType resolveQuestionTypeForUpdate(QuizQuestionUpdateRequestDto request, QuizQuestion existing) {
+        if (request.questionType() != null) {
+            return request.questionType();
+        }
+        if (request.options() != null) {
+            return request.options().isEmpty() ? QuizType.SHORT_ANSWER : QuizType.MULTIPLE_CHOICE;
+        }
+        return existing.getQuestionType();
+    }
+
+    private void applyOptionsOnCreate(QuizQuestion question, QuizType questionType,
+                                      List<QuizQuestionCreateRequestDto.OptionDto> options) {
+        if (questionType == QuizType.SHORT_ANSWER) {
+            return;
+        }
+        if (options == null || options.isEmpty()) {
+            throw new CustomException(ErrorCode.QUIZ_MCQ_OPTIONS_REQUIRED);
+        }
+        question.replaceOptions(buildOptions(question, options));
+    }
+
+    private void applyOptionsOnUpdate(QuizQuestion question, QuizType previousType, QuizType newType,
+                                      List<QuizQuestionCreateRequestDto.OptionDto> options) {
+        if (newType == QuizType.SHORT_ANSWER) {
+            question.replaceOptions(List.of());
+            return;
+        }
+        if (options != null) {
+            if (options.isEmpty()) {
+                throw new CustomException(ErrorCode.QUIZ_MCQ_OPTIONS_REQUIRED);
+            }
+            question.replaceOptions(buildOptions(question, options));
+            return;
+        }
+        if (previousType != QuizType.MULTIPLE_CHOICE) {
+            throw new CustomException(ErrorCode.QUIZ_MCQ_OPTIONS_REQUIRED);
+        }
+    }
+
+    private List<QuizOption> buildOptions(QuizQuestion question,
+                                          List<QuizQuestionCreateRequestDto.OptionDto> optionDtos) {
+        return optionDtos.stream()
+                .map(opt -> QuizOption.builder()
+                        .question(question)
+                        .optionText(opt.optionText())
+                        .correct(opt.correct())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     private LessonMaterial resolveAnchor(Long anchorId) {

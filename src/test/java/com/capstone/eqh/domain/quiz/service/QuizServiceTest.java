@@ -6,8 +6,11 @@ import com.capstone.eqh.domain.lesson.enums.EnrollmentStatus;
 import com.capstone.eqh.domain.lesson.repository.LessonEnrollmentRepository;
 import com.capstone.eqh.domain.lesson.repository.LessonMaterialRepository;
 import com.capstone.eqh.domain.quiz.dto.request.QuizCreateRequestDto;
+import com.capstone.eqh.domain.quiz.dto.request.QuizQuestionUpdateRequestDto;
 import com.capstone.eqh.domain.quiz.dto.request.QuizSubmitRequestDto;
 import com.capstone.eqh.domain.quiz.dto.request.QuizUpdateRequestDto;
+import com.capstone.eqh.domain.quiz.dto.response.QuizQuestionResponseDto;
+import com.capstone.eqh.domain.quiz.entity.QuizOption;
 import com.capstone.eqh.domain.quiz.dto.response.QuizDetailResponseDto;
 import com.capstone.eqh.domain.quiz.dto.response.QuizResponseDto;
 import com.capstone.eqh.domain.quiz.dto.response.QuizSubmissionResponseDto;
@@ -483,5 +486,87 @@ class QuizServiceTest {
         Page<QuizResponseDto> result = quizService.getAll(99L, Role.ADMIN, 3L, pageable);
 
         assertThat(result.getContent()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("updateQuestion: 객관식 → 단답형 변환 시 유형 변경 및 보기 삭제")
+    void updateQuestion_multipleChoiceToShortAnswer() {
+        User prof = createUser(1L, Role.PROF);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+        Quiz quiz = createQuiz(10L, prof, material);
+        QuizQuestion question = QuizQuestion.builder()
+                .quiz(quiz)
+                .questionText("객관식 문제")
+                .questionType(QuizType.MULTIPLE_CHOICE)
+                .score(10)
+                .correctAnswer("A")
+                .build();
+        ReflectionTestUtils.setField(question, "id", 5L);
+        question.replaceOptions(List.of(
+                QuizOption.builder().question(question).optionText("A").correct(true).build(),
+                QuizOption.builder().question(question).optionText("B").correct(false).build()
+        ));
+
+        when(quizRepository.findById(10L)).thenReturn(Optional.of(quiz));
+        when(questionRepository.findByIdAndQuiz(5L, quiz)).thenReturn(Optional.of(question));
+
+        QuizQuestionUpdateRequestDto request = new QuizQuestionUpdateRequestDto(
+                "단답형으로 변경",
+                QuizType.SHORT_ANSWER,
+                null,
+                "정답",
+                null,
+                10,
+                null,
+                null,
+                null
+        );
+
+        QuizQuestionResponseDto result = quizService.updateQuestion(10L, 5L, request);
+
+        assertThat(result.questionType()).isEqualTo(QuizType.SHORT_ANSWER);
+        assertThat(question.getQuestionType()).isEqualTo(QuizType.SHORT_ANSWER);
+        assertThat(question.getOptions()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("updateQuestion: questionType 없이 options=[]면 단답형으로 변환")
+    void updateQuestion_inferShortAnswerFromEmptyOptions() {
+        User prof = createUser(1L, Role.PROF);
+        Lesson lesson = createLesson(5L, prof);
+        LessonMaterial material = createMaterial(3L, lesson, prof);
+        Quiz quiz = createQuiz(10L, prof, material);
+        QuizQuestion question = QuizQuestion.builder()
+                .quiz(quiz)
+                .questionText("객관식 문제")
+                .questionType(QuizType.MULTIPLE_CHOICE)
+                .score(10)
+                .correctAnswer("A")
+                .build();
+        ReflectionTestUtils.setField(question, "id", 5L);
+        question.replaceOptions(List.of(
+                QuizOption.builder().question(question).optionText("A").correct(true).build()
+        ));
+
+        when(quizRepository.findById(10L)).thenReturn(Optional.of(quiz));
+        when(questionRepository.findByIdAndQuiz(5L, quiz)).thenReturn(Optional.of(question));
+
+        QuizQuestionUpdateRequestDto request = new QuizQuestionUpdateRequestDto(
+                "단답형으로 변경",
+                null,
+                List.of(),
+                "정답",
+                null,
+                10,
+                null,
+                null,
+                null
+        );
+
+        QuizQuestionResponseDto result = quizService.updateQuestion(10L, 5L, request);
+
+        assertThat(result.questionType()).isEqualTo(QuizType.SHORT_ANSWER);
+        assertThat(question.getOptions()).isEmpty();
     }
 }

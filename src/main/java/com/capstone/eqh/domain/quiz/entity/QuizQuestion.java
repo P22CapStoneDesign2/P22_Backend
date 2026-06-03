@@ -83,6 +83,10 @@ public class QuizQuestion {
         this.anchor = anchor;
     }
 
+    public void updateQuestionType(QuizType questionType) {
+        this.questionType = questionType;
+    }
+
     public void replaceOptions(List<QuizOption> newOptions) {
         this.options.clear();
         this.options.addAll(newOptions);

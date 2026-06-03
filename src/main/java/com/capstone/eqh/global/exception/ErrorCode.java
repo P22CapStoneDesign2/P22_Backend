@@ -21,6 +21,7 @@ public enum ErrorCode {
     FILE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "파일 크기는 50MB를 초과할 수 없습니다."),
 
     ENROLLMENT_NOT_PENDING(HttpStatus.BAD_REQUEST, "대기 중인 신청이 아닙니다."),
+    QUIZ_MCQ_OPTIONS_REQUIRED(HttpStatus.BAD_REQUEST, "객관식 문제는 보기를 1개 이상 입력해주세요."),
 
 
     // ── 401 Unauthorized ──────────────────────────────────────────────

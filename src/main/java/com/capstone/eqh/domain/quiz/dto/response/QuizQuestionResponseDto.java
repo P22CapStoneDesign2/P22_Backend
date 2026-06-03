@@ -14,7 +14,8 @@ public record QuizQuestionResponseDto(
         Long anchorId,
         String anchorTitle,
         Integer lessonPage,
-        Integer lessonParagraph
+        Integer lessonParagraph,
+        String explanation
 ) {
     public record OptionResponseDto(Long id, String optionText) {
     }
@@ -31,7 +32,8 @@ public record QuizQuestionResponseDto(
                 question.getAnchor() != null ? question.getAnchor().getId() : null,
                 question.getAnchor() != null ? question.getAnchor().getTitle() : null,
                 question.getLessonPage(),
-                question.getLessonParagraph()
+                question.getLessonParagraph(),
+                question.getExplanation()
         );
     }
 }

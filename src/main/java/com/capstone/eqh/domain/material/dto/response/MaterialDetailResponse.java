@@ -11,18 +11,20 @@ public record MaterialDetailResponse(
         int pageCount,
         String aspectRatio,
         String createdBy,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String fileUrl
 ) {
 
     public static MaterialDetailResponse from(Material material) {
         return new MaterialDetailResponse(
-                material.getId(),
-                material.getTitle(),
-                material.getDescription(),
-                material.getPageCount(),
-                material.getAspectRatio(),
-                material.getUploadedBy().getNickname(),
-                material.getCreatedAt()
+            material.getId(),
+            material.getTitle(),
+            material.getDescription(),
+            material.getPageCount(),
+            material.getAspectRatio(),
+            material.getUploadedBy() != null ? material.getUploadedBy().getNickname() : null,
+            material.getCreatedAt(),
+            material.getPdfUrl()
         );
     }
 }
