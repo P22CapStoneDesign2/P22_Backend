@@ -1,0 +1,214 @@
+package com.capstone.eqh.domain.user.service;
+
+import com.capstone.eqh.domain.user.dto.request.ProfSignupRequestDto;
+import com.capstone.eqh.domain.user.entity.User;
+import com.capstone.eqh.domain.user.enums.AuthProvider;
+import com.capstone.eqh.domain.user.enums.Role;
+import com.capstone.eqh.domain.user.enums.UserStatus;
+import com.capstone.eqh.domain.user.repository.UserRepository;
+import com.capstone.eqh.global.exception.CustomException;
+import com.capstone.eqh.global.exception.ErrorCode;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import java.util.Optional;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class UserSignupServiceTest {
+
+    @Mock UserRepository userRepository;
+    @Mock PasswordEncoder passwordEncoder;
+    @Mock EmailVerificationService emailVerificationService;
+    @InjectMocks UserSignupService userSignupService;
+
+    private ProfSignupRequestDto profRequest(String password, String passwordConfirm) {
+        return new ProfSignupRequestDto(
+                "홍길동",
+                "hong@university.ac.kr",
+                "gildong",
+                password,
+                passwordConfirm);
+    }
+
+    @Test
+    @DisplayName("profSignup 성공: Role.PROF + AuthProvider.LOCAL + status=PENDING으로 저장")
+    void profSignup_savesAsPending() {
+        ProfSignupRequestDto request = profRequest("Password1!", "Password1!");
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(userRepository.existsByNickname(request.nickname())).thenReturn(false);
+        when(passwordEncoder.encode("Password1!")).thenReturn("encoded");
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        userSignupService.profSignup(request);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        User saved = captor.getValue();
+        assertThat(saved.getRole()).isEqualTo(Role.PROF);
+        assertThat(saved.getProvider()).isEqualTo(AuthProvider.LOCAL);
+        assertThat(saved.getStatus()).isEqualTo(UserStatus.PENDING);
+        assertThat(saved.getPassword()).isEqualTo("encoded");
+        assertThat(saved.getEmail()).isEqualTo("hong@university.ac.kr");
+        assertThat(saved.getNickname()).isEqualTo("gildong");
+        assertThat(saved.getUsername()).isEqualTo("홍길동");
+        verify(emailVerificationService).requireEmailVerifiedForSignup(request.email());
+        verify(emailVerificationService).consumeEmailVerification(request.email());
+    }
+
+    @Test
+    @DisplayName("profSignup 실패: 이메일 미인증이면 EMAIL_NOT_VERIFIED")
+    void profSignup_emailNotVerified() {
+        ProfSignupRequestDto request = profRequest("Password1!", "Password1!");
+        doThrow(new CustomException(ErrorCode.EMAIL_NOT_VERIFIED))
+                .when(emailVerificationService).requireEmailVerifiedForSignup(request.email());
+
+        assertThatThrownBy(() -> userSignupService.profSignup(request))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.EMAIL_NOT_VERIFIED);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("profSignup 실패: password != passwordConfirm 이면 PASSWORD_CONFIRM_MISMATCH")
+    void profSignup_passwordMismatch() {
+        ProfSignupRequestDto request = profRequest("Password1!", "Different1!");
+
+        assertThatThrownBy(() -> userSignupService.profSignup(request))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.PASSWORD_CONFIRM_MISMATCH);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("profSignup 실패: 이메일 중복(ACTIVE/PENDING)이면 EMAIL_ALREADY_EXISTS")
+    void profSignup_emailDuplicate() {
+        ProfSignupRequestDto request = profRequest("Password1!", "Password1!");
+        User existing = User.builder()
+                .username("기존")
+                .nickname("oldnick")
+                .email(request.email())
+                .password("encoded")
+                .provider(AuthProvider.LOCAL)
+                .role(Role.PROF)
+                .status(UserStatus.ACTIVE)
+                .build();
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> userSignupService.profSignup(request))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.EMAIL_ALREADY_EXISTS);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("profSignup 실패: REJECTED된 이메일 재가입이면 EMAIL_REJECTED")
+    void profSignup_rejectedEmail() {
+        ProfSignupRequestDto request = profRequest("Password1!", "Password1!");
+        User rejected = User.builder()
+                .username("거절된교수")
+                .nickname("rejnick")
+                .email(request.email())
+                .password("encoded")
+                .provider(AuthProvider.LOCAL)
+                .role(Role.PROF)
+                .status(UserStatus.REJECTED)
+                .build();
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.of(rejected));
+
+        assertThatThrownBy(() -> userSignupService.profSignup(request))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.EMAIL_REJECTED);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("profSignup 실패: 닉네임 중복이면 NICKNAME_ALREADY_EXISTS")
+    void profSignup_nicknameDuplicate() {
+        ProfSignupRequestDto request = profRequest("Password1!", "Password1!");
+        when(userRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(userRepository.existsByNickname(request.nickname())).thenReturn(true);
+
+        assertThatThrownBy(() -> userSignupService.profSignup(request))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.NICKNAME_ALREADY_EXISTS);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("completeSocialSignup 성공: Role.USER + KAKAO + status=ACTIVE로 저장")
+    void userSignup_savesAsActive() {
+        String providerId = "kakao-123";
+        when(userRepository.existsByEmail("student@gmail.com")).thenReturn(false);
+        when(userRepository.existsByNickname("studyking")).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        User saved = userSignupService.completeSocialSignup(
+                providerId, AuthProvider.KAKAO,
+                "김학생", "student@gmail.com", "studyking");
+
+        assertThat(saved.getRole()).isEqualTo(Role.USER);
+        assertThat(saved.getProvider()).isEqualTo(AuthProvider.KAKAO);
+        assertThat(saved.getProviderId()).isEqualTo(providerId);
+        assertThat(saved.getStatus()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(saved.getPassword()).isNull();
+        assertThat(saved.getUsername()).isEqualTo("김학생");
+        assertThat(saved.getEmail()).isEqualTo("student@gmail.com");
+        assertThat(saved.getNickname()).isEqualTo("studyking");
+    }
+
+    @Test
+    @DisplayName("completeSocialSignup 실패: 이메일 중복이면 EMAIL_ALREADY_EXISTS")
+    void completeSocialSignup_emailDuplicate() {
+        when(userRepository.existsByEmail("student@gmail.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> userSignupService.completeSocialSignup(
+                "kakao-123", AuthProvider.KAKAO, "김학생", "student@gmail.com", "studyking"))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.EMAIL_ALREADY_EXISTS);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("completeSocialSignup 실패: 닉네임 중복이면 NICKNAME_ALREADY_EXISTS")
+    void completeSocialSignup_nicknameDuplicate() {
+        when(userRepository.existsByEmail("student@gmail.com")).thenReturn(false);
+        when(userRepository.existsByNickname("studyking")).thenReturn(true);
+
+        assertThatThrownBy(() -> userSignupService.completeSocialSignup(
+                "kakao-123", AuthProvider.KAKAO, "김학생", "student@gmail.com", "studyking"))
+                .isInstanceOf(CustomException.class)
+                .extracting(e -> ((CustomException) e).getErrorCode())
+                .isEqualTo(ErrorCode.NICKNAME_ALREADY_EXISTS);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("isNicknameAvailable: 미사용이면 true, 사용 중이면 false")
+    void isNicknameAvailable_returnsBasedOnExists() {
+        when(userRepository.existsByNickname("free")).thenReturn(false);
+        when(userRepository.existsByNickname("taken")).thenReturn(true);
+
+        assertThat(userSignupService.isNicknameAvailable("free")).isTrue();
+        assertThat(userSignupService.isNicknameAvailable("taken")).isFalse();
+    }
+}
